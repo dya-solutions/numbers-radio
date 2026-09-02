@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Numbers Radio - warm, simple theme
+   Colours are defined once here so the whole site stays consistent.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-cream: #faf6f0;
+  --color-sand: #f0e7db;
+  --color-ink: #3a2f28;
+  --color-ink-soft: #6b5d51;
+  --color-ember: #c2703d;
+  --color-ember-dark: #a65a2c;
+  --color-gold: #d9a441;
+
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.65;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--color-ember-dark);
+}
