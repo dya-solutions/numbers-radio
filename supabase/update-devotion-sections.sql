@@ -1,9 +1,10 @@
 -- ===========================================================================
--- Numbers Radio - add the Daily Devotion + Program Guide editors
+-- Numbers Radio - update the Daily Devotion to the 8-section format
 --
--- Run this ONCE if you already set up the database earlier and just need the
--- new tables for the /admin content editors.
--- (If you are setting up fresh, run schema.sql instead - it includes this.)
+-- Run this ONCE in Supabase to add the new devotion sections
+-- (Source line, Further Study, Golden Nugget) and rename "reflection" to
+-- "body". Your existing devotion text is kept - the old "reflection"
+-- content is moved into "body".
 --
 -- HOW TO RUN:
 --   1. Open https://supabase.com/dashboard  ->  your project
@@ -13,11 +14,7 @@
 -- Running it more than once is safe.
 -- ===========================================================================
 
--- ---------------------------------------------------------------------------
--- DAILY DEVOTION  (one single row, id is always 1)
--- Eight sections, in order: date, source line, title, scripture, body,
--- further study, golden nugget, prayer.
--- ---------------------------------------------------------------------------
+-- Make sure the table exists (fresh projects).
 create table if not exists public.devotion (
   id                   integer primary key default 1 check (id = 1),
   date_label           text not null default '',
@@ -34,25 +31,31 @@ create table if not exists public.devotion (
 
 alter table public.devotion enable row level security;
 
--- Bring older installations up to date (safe to run repeatedly).
+-- Add the new columns to older installations (safe to repeat).
 alter table public.devotion add column if not exists source_line   text not null default '';
 alter table public.devotion add column if not exists body          text not null default '';
 alter table public.devotion add column if not exists further_study text not null default '';
 alter table public.devotion add column if not exists golden_nugget text not null default '';
 
+-- Move any existing "reflection" text into "body", then drop "reflection".
 do $$
 begin
   if exists (
     select 1 from information_schema.columns
-    where table_schema = 'public' and table_name = 'devotion' and column_name = 'reflection'
+    where table_schema = 'public'
+      and table_name = 'devotion'
+      and column_name = 'reflection'
   ) then
     update public.devotion
        set body = reflection
-     where coalesce(body, '') = '' and coalesce(reflection, '') <> '';
+     where coalesce(body, '') = ''
+       and coalesce(reflection, '') <> '';
+
     alter table public.devotion drop column reflection;
   end if;
 end $$;
 
+-- Seed a starting row only if the devotion has never been set up.
 insert into public.devotion
   (id, date_label, source_line, title, scripture_reference, scripture_text,
    body, further_study, golden_nugget, prayer)
@@ -69,35 +72,3 @@ values (
   'Father, thank you for knowing me by name. Help me walk today without fear, sure that I belong to you. Amen.'
 )
 on conflict (id) do nothing;
-
--- ---------------------------------------------------------------------------
--- PROGRAM GUIDE  (one row per show)
--- ---------------------------------------------------------------------------
-create table if not exists public.schedule_entries (
-  id           uuid primary key default gen_random_uuid(),
-  created_at   timestamptz not null default now(),
-  day          text not null default '',
-  time_label   text not null default '',
-  show_name    text not null default '',
-  description  text not null default ''
-);
-
-alter table public.schedule_entries enable row level security;
-
-create index if not exists schedule_entries_created_at_idx
-  on public.schedule_entries (created_at asc);
-
-insert into public.schedule_entries (day, time_label, show_name, description)
-select * from (values
-  ('Weekday Mornings (Monday - Friday)', '6:00 AM',  'First Light',       'Gentle worship and Scripture to begin the day. With Grace Okafor.'),
-  ('Weekday Mornings (Monday - Friday)', '8:00 AM',  'The Morning Word',   'A short teaching and prayer over the day ahead. With Pastor Daniel Reyes.'),
-  ('Weekday Mornings (Monday - Friday)', '10:00 AM', 'Hymns & History',    'Classic hymns and the stories behind them.'),
-  ('Weekday Afternoons (Monday - Friday)', '12:00 PM', 'Midday Rest',      'Quiet instrumental worship for the lunch hour.'),
-  ('Weekday Afternoons (Monday - Friday)', '3:00 PM',  'Every Soul Counts','Listener stories, encouragement, and prayer requests.'),
-  ('Weekday Afternoons (Monday - Friday)', '5:00 PM',  'Drive Home Praise','Uplifting contemporary worship for the commute.'),
-  ('Evenings (Every Night)', '8:00 PM',  'Evening Prayer',   'A guided time of prayer and reflection.'),
-  ('Evenings (Every Night)', '10:00 PM', 'Through the Night','Soft worship music until morning.'),
-  ('Sunday', '9:00 AM', 'Sunday Gathering',  'A full worship service with teaching.'),
-  ('Sunday', '6:00 PM', 'Songs of the Church','Worship music from around the world.')
-) as seed(day, time_label, show_name, description)
-where not exists (select 1 from public.schedule_entries);

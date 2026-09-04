@@ -11,19 +11,25 @@ import { weeklySchedule } from "@/content/schedule";
 
 export interface Devotion {
   dateLabel: string;
+  sourceLine: string;
   title: string;
   scriptureReference: string;
   scriptureText: string;
-  reflection: string;
+  body: string;
+  furtherStudy: string;
+  goldenNugget: string;
   prayer: string;
 }
 
 const devotionFileFallback: Devotion = {
   dateLabel: devotionFallback.date,
+  sourceLine: devotionFallback.sourceLine,
   title: devotionFallback.title,
   scriptureReference: devotionFallback.scriptureReference,
   scriptureText: devotionFallback.scriptureText,
-  reflection: devotionFallback.body,
+  body: devotionFallback.body,
+  furtherStudy: devotionFallback.furtherStudy,
+  goldenNugget: devotionFallback.goldenNugget,
   prayer: devotionFallback.prayer,
 };
 
@@ -41,10 +47,13 @@ export async function getDevotion(): Promise<Devotion> {
 
     return {
       dateLabel: data.date_label ?? "",
+      sourceLine: data.source_line ?? "",
       title: data.title ?? "",
       scriptureReference: data.scripture_reference ?? "",
       scriptureText: data.scripture_text ?? "",
-      reflection: data.reflection ?? "",
+      body: data.body ?? "",
+      furtherStudy: data.further_study ?? "",
+      goldenNugget: data.golden_nugget ?? "",
       prayer: data.prayer ?? "",
     };
   } catch (err) {

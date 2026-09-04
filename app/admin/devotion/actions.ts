@@ -19,18 +19,21 @@ export async function saveDevotion(
   const record = {
     id: 1,
     date_label: text(formData, "date_label"),
+    source_line: text(formData, "source_line"),
     title: text(formData, "title"),
     scripture_reference: text(formData, "scripture_reference"),
     scripture_text: text(formData, "scripture_text"),
-    reflection: text(formData, "reflection"),
+    body: text(formData, "body"),
+    further_study: text(formData, "further_study"),
+    golden_nugget: text(formData, "golden_nugget"),
     prayer: text(formData, "prayer"),
     updated_at: new Date().toISOString(),
   };
 
-  if (!record.title && !record.reflection) {
+  if (!record.title && !record.body) {
     return {
       ok: false,
-      message: "Please add at least a title and a reflection before saving.",
+      message: "Please add at least a title and the devotion body before saving.",
     };
   }
 

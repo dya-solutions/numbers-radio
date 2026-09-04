@@ -10,23 +10,24 @@ Counts.*
 | --- | --- | --- |
 | **Listen** | `/` | Homepage with a live audio player for the radio stream. |
 | **Program Guide** | `/program-guide` | The on-air schedule. Hand-written for now; later it pulls from AzuraCast automatically. |
-| **Daily Devotion** | `/daily-devotion` | One short Scripture and reflection that you update by hand. |
+| **Daily Devotion** | `/daily-devotion` | An eight-section devotion (date, source line, title, scripture, body, further study, golden nugget, prayer) that you edit from `/admin`. |
 | **Feedback & Prayer** | `/feedback` | Two forms - feedback and prayer requests - that save to a Supabase database. |
-| **Submissions (staff only)** | `/admin` | A password-protected list of every feedback and prayer request, newest first. |
+| **Staff area (password-protected)** | `/admin` | Feedback + prayer submissions, and editors for the Daily Devotion and Program Guide. |
 
 ---
 
 ## The things only you can change (no coding needed)
 
 ### 1. The daily devotion
-Open the file [`content/devotion.ts`](content/devotion.ts). Change the words
-inside the quotation marks - the date, title, verse, reflection, and prayer.
-Save the file. If you edit it on GitHub.com, click **Commit changes** and the
-website updates itself in a minute or two.
+Sign in to `/admin` and open **Edit Daily Devotion**. Fill in the eight boxes -
+Date, Source line, Devotion title, Scripture, Body, Further study, Golden nugget,
+and Prayer - then press **Save**. The public page updates straight away. No code,
+no files.
 
-### 2. The program guide (until the automatic version is ready)
-Open [`content/schedule.ts`](content/schedule.ts) and edit the show times,
-names, and descriptions the same way.
+### 2. The program guide
+Sign in to `/admin` and open **Edit Program Guide**. Add, change, or remove
+shows (Day, Time, Show name, Short description). The public page updates straight
+away.
 
 ### 3. The stream address, station links, and admin password
 These live in **environment variables** (see setup below). You never edit code
@@ -51,8 +52,11 @@ You need three free accounts: **GitHub** (you already have this), **Supabase**
 4. In the left menu, open **SQL Editor** -> **New query**.
 5. Open the file [`supabase/schema.sql`](supabase/schema.sql) from this project,
    copy everything in it, paste it into the query box, and click **Run**.
-   You should see "Success. No rows returned." This created the table that
-   stores feedback and prayer requests.
+   You should see "Success". This creates the three tables the site uses:
+   `submissions`, `devotion`, and `schedule_entries`.
+   - *Already had the site running from before?* Run
+     [`supabase/update-devotion-sections.sql`](supabase/update-devotion-sections.sql)
+     as well - it adds the new devotion sections and keeps your existing text.
 6. In the left menu, open **Project Settings** (the gear) -> **API**. Keep this
    tab open - you need two values from it:
    - **Project URL** (looks like `https://abcdefg.supabase.co`)
@@ -115,12 +119,22 @@ Then open <http://localhost:3000>.
 ## For a developer (later work)
 
 - **Framework:** Next.js (App Router), TypeScript, Tailwind CSS v4.
-- **Data:** Supabase table `public.submissions`. Server actions in
-  [`app/feedback/actions.ts`](app/feedback/actions.ts) insert with the service
-  role key; the admin page reads the same way. RLS is on with no public
-  policies, so the table is server-only.
+- **Data:** Supabase tables `public.submissions`, `public.devotion` (single row,
+  `id = 1`), `public.schedule_entries`. All reads/writes go through the service
+  role key on the server ([`lib/supabaseServer.ts`](lib/supabaseServer.ts),
+  [`lib/content.ts`](lib/content.ts)); RLS is on with no public policies, so the
+  tables are server-only. `content/devotion.ts` and `content/schedule.ts` remain
+  as read-only fallbacks when the database is unreachable.
+- **Admin editors:** [`app/admin/devotion`](app/admin/devotion) and
+  [`app/admin/schedule`](app/admin/schedule) use server actions that
+  `revalidatePath` the public pages, which are `force-dynamic`.
 - **Admin auth:** HTTP Basic Auth in [`middleware.ts`](middleware.ts) using
-  `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
-- **Program Guide TODO:** replace [`content/schedule.ts`](content/schedule.ts)
-  with a fetch to
+  `ADMIN_USERNAME` / `ADMIN_PASSWORD`; the matcher also covers the server-action
+  POSTs.
+- **SQL:** [`supabase/schema.sql`](supabase/schema.sql) is the full, idempotent
+  setup. [`supabase/update-devotion-sections.sql`](supabase/update-devotion-sections.sql)
+  migrates an older `devotion` table (renames `reflection` to `body`, adds
+  `source_line` / `further_study` / `golden_nugget`).
+- **Program Guide TODO:** replace the `schedule_entries` read in
+  [`lib/content.ts`](lib/content.ts) with a fetch to
   `${NEXT_PUBLIC_AZURACAST_BASE_URL}/api/station/${NEXT_PUBLIC_AZURACAST_STATION_ID}/schedule`.

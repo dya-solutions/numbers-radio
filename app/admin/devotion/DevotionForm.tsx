@@ -77,39 +77,74 @@ export default function DevotionForm({ devotion }: { devotion: Devotion }) {
   );
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} className="space-y-6">
+      {/* 1. Date */}
       <TextField
-        label="Today's date"
+        label="1. Date"
         name="date_label"
         hint="Shown at the top of the page, in plain words. Example: September 4, 2026"
         defaultValue={devotion.dateLabel}
       />
+
+      {/* 2. Source line */}
       <TextField
-        label="Title"
+        label="2. Source line"
+        name="source_line"
+        hint="Where the devotion is from and who it is by. Example: From Our Daily Bread, by Tim Gustafson"
+        defaultValue={devotion.sourceLine}
+      />
+
+      {/* 3. Devotion title */}
+      <TextField
+        label="3. Devotion title (the message of the day)"
         name="title"
         defaultValue={devotion.title}
       />
+
+      {/* 4. Scripture */}
       <TextField
-        label="Bible verse - where it is from"
+        label="4. Scripture - reference"
         name="scripture_reference"
         hint="Example: Isaiah 43:1"
         defaultValue={devotion.scriptureReference}
       />
       <TextArea
-        label="Bible verse - the words"
+        label="4. Scripture - the verse text"
         name="scripture_text"
         rows={3}
         defaultValue={devotion.scriptureText}
       />
+
+      {/* 5. Body */}
       <TextArea
-        label="Reflection"
-        name="reflection"
-        hint="The main devotion. Leave one blank line between paragraphs."
-        rows={10}
-        defaultValue={devotion.reflection}
+        label="5. Body (the main devotion)"
+        name="body"
+        hint="Leave one blank line between paragraphs."
+        rows={12}
+        defaultValue={devotion.body}
       />
+
+      {/* 6. Further study */}
       <TextArea
-        label="Prayer"
+        label="6. Further study"
+        name="further_study"
+        hint="Related reading or extra verses. Put each suggestion on its own line."
+        rows={5}
+        defaultValue={devotion.furtherStudy}
+      />
+
+      {/* 7. Golden nugget */}
+      <TextArea
+        label="7. Golden nugget"
+        name="golden_nugget"
+        hint="One short standout takeaway line or quote."
+        rows={2}
+        defaultValue={devotion.goldenNugget}
+      />
+
+      {/* 8. Prayer */}
+      <TextArea
+        label="8. Prayer"
         name="prayer"
         hint="A short closing prayer."
         rows={4}
