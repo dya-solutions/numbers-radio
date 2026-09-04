@@ -22,8 +22,8 @@ export default function AdminNav() {
             href={tab.href}
             className={`rounded-lg px-3 py-1.5 text-sm no-underline transition-colors ${
               active
-                ? "bg-ember text-white"
-                : "bg-white/60 text-ink-soft hover:text-ink"
+                ? "bg-gold font-medium text-black"
+                : "border border-sand bg-surface text-ink-soft hover:text-ink"
             }`}
           >
             {tab.label}

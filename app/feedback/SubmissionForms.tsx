@@ -38,7 +38,7 @@ function Field({
         type={type}
         name={name}
         required={required}
-        className="w-full rounded-lg border border-sand bg-white px-3 py-2 outline-none focus:border-ember"
+        className="w-full rounded-lg border border-sand bg-surface-2 px-3 py-2 outline-none focus:border-ember"
       />
     </label>
   );
@@ -58,8 +58,8 @@ function FormCard({
   const [state, formAction] = useActionState(action, null);
 
   return (
-    <section className="rounded-xl border border-sand bg-white/60 p-6">
-      <h2 className="m-0 text-xl text-ember-dark">{title}</h2>
+    <section className="rounded-xl border border-sand bg-surface p-6">
+      <h2 className="m-0 text-xl text-gold">{title}</h2>
       <p className="mt-1 text-sm text-ink-soft">{description}</p>
 
       {state?.ok ? (
@@ -75,7 +75,7 @@ function FormCard({
               name="message"
               required
               rows={5}
-              className="w-full rounded-lg border border-sand bg-white px-3 py-2 outline-none focus:border-ember"
+              className="w-full rounded-lg border border-sand bg-surface-2 px-3 py-2 outline-none focus:border-ember"
             />
           </label>
 
@@ -90,7 +90,7 @@ function FormCard({
           />
 
           {state && !state.ok ? (
-            <p className="m-0 text-sm text-ember-dark">{state.message}</p>
+            <p className="m-0 text-sm text-red-300">{state.message}</p>
           ) : null}
 
           <SubmitButton label={buttonLabel} />

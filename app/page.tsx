@@ -6,7 +6,7 @@ export default function HomePage() {
   return (
     <div className="space-y-12">
       <section className="text-center">
-        <p className="m-0 text-sm uppercase tracking-widest text-ember-dark">
+        <p className="m-0 text-sm uppercase tracking-widest text-gold">
           Christian Radio
         </p>
         <h1 className="mt-2 text-4xl sm:text-5xl">{STATION_NAME}</h1>
@@ -53,7 +53,7 @@ function HomeCard({
   return (
     <Link
       href={href}
-      className="block rounded-xl border border-sand bg-white/60 p-5 no-underline transition-colors hover:border-ember"
+      className="block rounded-xl border border-sand bg-surface p-5 no-underline transition-colors hover:border-ember"
     >
       <h3 className="m-0 text-lg text-ink">{title}</h3>
       <p className="m-0 mt-1 text-sm text-ink-soft">{text}</p>

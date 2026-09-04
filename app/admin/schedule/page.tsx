@@ -28,7 +28,7 @@ export default async function AdminSchedulePage() {
       </header>
 
       {loadError ? (
-        <div className="rounded-xl border border-ember bg-white/60 p-5 text-ink">
+        <div className="rounded-xl border border-ember bg-surface p-5 text-ink">
           <p className="m-0 font-semibold">Could not load the schedule.</p>
           <p className="m-0 mt-1 text-sm text-ink-soft">{loadError}</p>
         </div>

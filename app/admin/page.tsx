@@ -46,7 +46,7 @@ export default async function AdminPage() {
       </header>
 
       {loadError ? (
-        <div className="rounded-xl border border-ember bg-white/60 p-5 text-ink">
+        <div className="rounded-xl border border-ember bg-surface p-5 text-ink">
           <p className="m-0 font-semibold">Could not load submissions.</p>
           <p className="m-0 mt-1 text-sm text-ink-soft">{loadError}</p>
         </div>
@@ -68,14 +68,14 @@ export default async function AdminPage() {
               {submissions.map((s) => (
                 <li
                   key={s.id}
-                  className="rounded-xl border border-sand bg-white/60 p-5"
+                  className="rounded-xl border border-sand bg-surface p-5"
                 >
                   <div className="flex flex-wrap items-center gap-3">
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         s.type === "prayer"
-                          ? "bg-gold/25 text-ember-dark"
-                          : "bg-sand text-ink-soft"
+                          ? "bg-gold text-black"
+                          : "bg-ember text-white"
                       }`}
                     >
                       {s.type === "prayer" ? "Prayer Request" : "Feedback"}

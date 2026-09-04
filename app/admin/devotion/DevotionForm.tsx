@@ -37,7 +37,7 @@ function TextField({
         type="text"
         name={name}
         defaultValue={defaultValue}
-        className="w-full rounded-lg border border-sand bg-white px-3 py-2 outline-none focus:border-ember"
+        className="w-full rounded-lg border border-sand bg-surface-2 px-3 py-2 outline-none focus:border-ember"
       />
     </label>
   );
@@ -64,7 +64,7 @@ function TextArea({
         name={name}
         rows={rows}
         defaultValue={defaultValue}
-        className="w-full rounded-lg border border-sand bg-white px-3 py-2 outline-none focus:border-ember"
+        className="w-full rounded-lg border border-sand bg-surface-2 px-3 py-2 outline-none focus:border-ember"
       />
     </label>
   );
@@ -120,7 +120,7 @@ export default function DevotionForm({ devotion }: { devotion: Devotion }) {
         <SaveButton />
         {state ? (
           <span
-            className={`text-sm ${state.ok ? "text-ink-soft" : "text-ember-dark"}`}
+            className={`text-sm ${state.ok ? "text-ink-soft" : "text-red-300"}`}
           >
             {state.message}
           </span>

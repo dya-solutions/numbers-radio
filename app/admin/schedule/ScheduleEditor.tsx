@@ -10,7 +10,7 @@ import {
 } from "./actions";
 
 const inputClass =
-  "w-full rounded-lg border border-sand bg-white px-3 py-2 outline-none focus:border-ember";
+  "w-full rounded-lg border border-sand bg-surface-2 px-3 py-2 outline-none focus:border-ember";
 
 function Fields({ entry }: { entry?: ScheduleEntry }) {
   return (
@@ -87,7 +87,7 @@ export default function ScheduleEditor({
           className={`rounded-lg px-4 py-2 text-sm ${
             message.ok
               ? "bg-sand/70 text-ink"
-              : "bg-white text-ember-dark border border-ember"
+              : "bg-surface-2 text-red-300 border border-ember"
           }`}
         >
           {message.message}
@@ -95,8 +95,8 @@ export default function ScheduleEditor({
       ) : null}
 
       {/* Add a new show */}
-      <section className="rounded-xl border border-sand bg-white/60 p-6">
-        <h2 className="m-0 text-xl text-ember-dark">Add a show</h2>
+      <section className="rounded-xl border border-sand bg-surface p-6">
+        <h2 className="m-0 text-xl text-gold">Add a show</h2>
         <form
           ref={addFormRef}
           className="mt-4 space-y-4"
@@ -119,7 +119,7 @@ export default function ScheduleEditor({
 
       {/* Existing shows */}
       <section className="space-y-3">
-        <h2 className="m-0 text-xl text-ember-dark">
+        <h2 className="m-0 text-xl text-gold">
           Current shows ({entries.length})
         </h2>
 
@@ -132,7 +132,7 @@ export default function ScheduleEditor({
             {entries.map((entry) => (
               <li
                 key={entry.id}
-                className="rounded-xl border border-sand bg-white/60 p-5"
+                className="rounded-xl border border-sand bg-surface p-5"
               >
                 {editingId === entry.id ? (
                   <form
@@ -208,7 +208,7 @@ export default function ScheduleEditor({
                         <button
                           type="submit"
                           disabled={isPending}
-                          className="rounded-lg border border-ember px-3 py-1.5 text-sm text-ember-dark hover:bg-ember hover:text-white disabled:opacity-60"
+                          className="rounded-lg border border-ember px-3 py-1.5 text-sm text-red-300 hover:bg-ember hover:text-white disabled:opacity-60"
                         >
                           Remove
                         </button>

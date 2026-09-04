@@ -48,7 +48,7 @@ export default function AudioPlayer() {
         : "Listen Live";
 
   return (
-    <div className="rounded-2xl border border-sand bg-white/70 p-6 shadow-sm">
+    <div className="rounded-2xl border border-sand bg-surface p-6 shadow-sm">
       <div className="flex items-center gap-4">
         <button
           type="button"

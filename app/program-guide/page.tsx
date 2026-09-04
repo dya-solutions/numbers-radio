@@ -25,9 +25,9 @@ export default async function ProgramGuidePage() {
         {schedule.map((day) => (
           <section
             key={day.day}
-            className="rounded-xl border border-sand bg-white/60 p-5"
+            className="rounded-xl border border-sand bg-surface p-5"
           >
-            <h2 className="m-0 text-xl text-ember-dark">{day.day}</h2>
+            <h2 className="m-0 text-xl text-gold">{day.day}</h2>
             <ul className="mt-4 divide-y divide-sand">
               {day.entries.map((entry) => (
                 <li

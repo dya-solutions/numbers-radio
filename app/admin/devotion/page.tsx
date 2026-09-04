@@ -20,7 +20,7 @@ export default async function AdminDevotionPage() {
         </p>
       </header>
 
-      <div className="rounded-xl border border-sand bg-white/60 p-6">
+      <div className="rounded-xl border border-sand bg-surface p-6">
         <DevotionForm devotion={devotion} />
       </div>
     </div>

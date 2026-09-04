@@ -1,39 +1,66 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   Numbers Radio - warm, simple theme
-   Colours are defined once here so the whole site stays consistent.
+   Numbers Radio - brand theme
+   Colours come straight from the logo: black, white, bold red, gold.
+   Defined once here so the whole site stays consistent.
 --------------------------------------------------------------------------- */
 @theme {
-  --color-cream: #faf6f0;
-  --color-sand: #f0e7db;
-  --color-ink: #3a2f28;
-  --color-ink-soft: #6b5d51;
-  --color-ember: #c2703d;
-  --color-ember-dark: #a65a2c;
-  --color-gold: #d9a441;
+  /* Surfaces */
+  --color-cream: #000000;      /* page background (matches the logo's black) */
+  --color-surface: #161616;    /* cards and panels */
+  --color-surface-2: #1f1f1f;  /* form fields, nested panels */
+  --color-sand: #333333;       /* hairlines / borders */
+
+  /* Text */
+  --color-ink: #ffffff;        /* primary text */
+  --color-ink-soft: #b3b3b3;   /* secondary text (AA on the dark background) */
+
+  /* Accents */
+  --color-ember: #d32f2f;      /* red - primary buttons / calls to action */
+  --color-ember-dark: #b71c1c; /* red - button hover / active */
+  --color-gold: #f2a900;       /* gold - links, active states, highlights */
+  --color-gold-dark: #c98a00;  /* gold - hover on gold fills */
 
   --font-serif: Georgia, "Times New Roman", serif;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
 
-body {
-  background-color: var(--color-cream);
-  color: var(--color-ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.65;
-}
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65;
+  }
 
-h1,
-h2,
-h3 {
-  font-family: var(--font-serif);
-  letter-spacing: -0.01em;
-}
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+  }
 
-a {
-  color: var(--color-ember-dark);
+  a {
+    color: var(--color-gold);
+  }
+
+  a:hover {
+    color: var(--color-gold-dark);
+  }
+
+  /* Form controls inherit the dark theme rather than the browser default. */
+  input,
+  textarea,
+  select {
+    color: var(--color-ink);
+  }
+
+  ::placeholder {
+    color: #7a7a7a;
+  }
 }
