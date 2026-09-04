@@ -1,18 +1,14 @@
 import Link from "next/link";
 import AudioPlayer from "./components/AudioPlayer";
-import { STATION_NAME, STATION_TAGLINE } from "@/lib/config";
+import { STATION_TAGLINE } from "@/lib/config";
 
 export default function HomePage() {
   return (
     <div className="space-y-12">
       <section className="text-center">
-        <p className="m-0 text-sm uppercase tracking-widest text-gold">
-          Christian Radio
-        </p>
-        <h1 className="mt-2 text-4xl sm:text-5xl">{STATION_NAME}</h1>
-        <p className="mx-auto mt-3 max-w-xl text-lg text-ink-soft">
-          {STATION_TAGLINE}. Worship, teaching, and prayer - streaming day and
-          night.
+        <h1 className="m-0 text-4xl sm:text-5xl">Numbers Christian Radio</h1>
+        <p className="mt-3 text-xl font-bold uppercase tracking-widest text-gold sm:text-2xl">
+          {STATION_TAGLINE}
         </p>
       </section>
 
