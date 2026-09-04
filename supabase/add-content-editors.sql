@@ -1,42 +1,20 @@
 -- ===========================================================================
--- Numbers Radio - database setup
+-- Numbers Radio - add the Daily Devotion + Program Guide editors
 --
--- HOW TO RUN THIS (one time):
---   1. Open your project at https://supabase.com/dashboard
---   2. In the left menu choose "SQL Editor"
---   3. Click "New query"
---   4. Copy everything in this file, paste it in, and click "Run"
+-- Run this ONCE if you already set up the database earlier and just need the
+-- new tables for the /admin content editors.
+-- (If you are setting up fresh, run schema.sql instead - it includes this.)
 --
--- This creates the tables the website needs:
---   submissions      - feedback messages and prayer requests
---   devotion         - the single Daily Devotion shown on the site
---   schedule_entries - the shows listed on the Program Guide
+-- HOW TO RUN:
+--   1. Open https://supabase.com/dashboard  ->  your project
+--   2. Left menu: "SQL Editor"  ->  "New query"
+--   3. Paste everything in this file  ->  click "Run"
 --
 -- Running it more than once is safe.
 -- ===========================================================================
 
-create table if not exists public.submissions (
-  id          uuid primary key default gen_random_uuid(),
-  created_at  timestamptz not null default now(),
-  type        text not null check (type in ('feedback', 'prayer')),
-  name        text,
-  email       text,
-  message     text not null
-);
-
--- Turn on row level security. The website talks to this table using the
--- private "service role" key on the server, which bypasses these rules, so
--- with no public policies added the table is closed to everyone else.
-alter table public.submissions enable row level security;
-
--- Helpful index for the admin page (newest first).
-create index if not exists submissions_created_at_idx
-  on public.submissions (created_at desc);
-
-
 -- ---------------------------------------------------------------------------
--- DAILY DEVOTION
--- One single row (id is always 1). The /admin editor updates this row.
+-- DAILY DEVOTION  (one single row, id is always 1)
 -- ---------------------------------------------------------------------------
 create table if not exists public.devotion (
   id                   integer primary key default 1 check (id = 1),
@@ -51,7 +29,6 @@ create table if not exists public.devotion (
 
 alter table public.devotion enable row level security;
 
--- Put the starting devotion in place (only if the row does not exist yet).
 insert into public.devotion
   (id, date_label, title, scripture_reference, scripture_text, reflection, prayer)
 values (
@@ -65,10 +42,8 @@ values (
 )
 on conflict (id) do nothing;
 
-
 -- ---------------------------------------------------------------------------
--- PROGRAM GUIDE
--- One row per show. The /admin editor adds, changes, and removes these.
+-- PROGRAM GUIDE  (one row per show)
 -- ---------------------------------------------------------------------------
 create table if not exists public.schedule_entries (
   id           uuid primary key default gen_random_uuid(),
@@ -84,7 +59,6 @@ alter table public.schedule_entries enable row level security;
 create index if not exists schedule_entries_created_at_idx
   on public.schedule_entries (created_at asc);
 
--- Put the starting schedule in place (only if the table is completely empty).
 insert into public.schedule_entries (day, time_label, show_name, description)
 select * from (values
   ('Weekday Mornings (Monday - Friday)', '6:00 AM',  'First Light',       'Gentle worship and Scripture to begin the day. With Grace Okafor.'),

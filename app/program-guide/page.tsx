@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
-import { weeklySchedule } from "@/content/schedule";
+import { getGroupedSchedule } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Program Guide",
 };
 
-export default function ProgramGuidePage() {
+// Always show the most recently saved schedule.
+export const dynamic = "force-dynamic";
+
+export default async function ProgramGuidePage() {
+  const schedule = await getGroupedSchedule();
+
   return (
     <div className="space-y-8">
       <header>
@@ -14,16 +19,10 @@ export default function ProgramGuidePage() {
           Here is what you can expect to hear on Numbers Radio. All times are
           shown in the station&rsquo;s local time.
         </p>
-        <p className="mt-1 text-sm text-ink-soft">
-          <em>
-            This schedule is entered by hand for now. Soon it will update
-            automatically from our broadcast system.
-          </em>
-        </p>
       </header>
 
       <div className="space-y-6">
-        {weeklySchedule.map((day) => (
+        {schedule.map((day) => (
           <section
             key={day.day}
             className="rounded-xl border border-sand bg-white/60 p-5"
@@ -32,20 +31,21 @@ export default function ProgramGuidePage() {
             <ul className="mt-4 divide-y divide-sand">
               {day.entries.map((entry) => (
                 <li
-                  key={`${day.day}-${entry.time}-${entry.title}`}
+                  key={entry.id}
                   className="flex flex-col gap-1 py-3 sm:flex-row sm:gap-4"
                 >
                   <span className="w-24 shrink-0 font-semibold text-ink">
-                    {entry.time}
+                    {entry.timeLabel}
                   </span>
                   <span>
-                    <span className="font-semibold text-ink">{entry.title}</span>
-                    {entry.host ? (
-                      <span className="text-ink-soft"> {entry.host}</span>
-                    ) : null}
-                    <span className="block text-sm text-ink-soft">
-                      {entry.description}
+                    <span className="font-semibold text-ink">
+                      {entry.showName}
                     </span>
+                    {entry.description ? (
+                      <span className="block text-sm text-ink-soft">
+                        {entry.description}
+                      </span>
+                    ) : null}
                   </span>
                 </li>
               ))}

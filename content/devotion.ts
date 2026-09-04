@@ -1,11 +1,10 @@
 /**
- * DAILY DEVOTION
+ * DAILY DEVOTION - starter text / safety net only.
  *
- * To update the devotion, edit the text between the quotation marks below,
- * then save the file. If you use GitHub in the browser, commit the change and
- * the website will update itself within a minute or two.
+ * You no longer edit this file to change the devotion. Update it from the
+ * website instead: sign in to /admin and open "Edit Daily Devotion".
  *
- * Keep the layout the same - only change the words inside the quotes.
+ * This text is only shown if the database cannot be reached.
  */
 
 export const devotion = {

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import "./globals.css";
 import SiteHeader from "./components/SiteHeader";
 import { STATION_NAME, STATION_TAGLINE, PRODUCT_FAMILY_URL } from "@/lib/config";
@@ -35,11 +34,6 @@ export default function RootLayout({
               <a href={PRODUCT_FAMILY_URL} target="_blank" rel="noreferrer">
                 trynumbers.com
               </a>
-            </p>
-            <p className="m-0 mt-3 text-xs">
-              <Link href="/admin" className="text-ink-soft no-underline hover:underline">
-                Station staff
-              </Link>
             </p>
           </div>
         </footer>

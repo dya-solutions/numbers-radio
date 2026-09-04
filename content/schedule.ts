@@ -1,10 +1,10 @@
 /**
- * PROGRAM GUIDE - placeholder schedule
+ * PROGRAM GUIDE - starter schedule / safety net only.
  *
- * For now this is a simple hand-written list. Later, this page will load the
- * real schedule automatically from AzuraCast, and this file can be removed.
+ * You no longer edit this file to change the schedule. Update it from the
+ * website instead: sign in to /admin and open "Edit Program Guide".
  *
- * To edit: change the text below and save. Times are shown exactly as written.
+ * This list is only shown if the database cannot be reached.
  */
 
 export interface ScheduleEntry {
