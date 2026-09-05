@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import type { Devotion } from "@/lib/content";
 import { saveDevotion, type SaveResult } from "./actions";
@@ -75,9 +75,23 @@ export default function DevotionForm({ devotion }: { devotion: Devotion }) {
     saveDevotion,
     null,
   );
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function handleClearAll() {
+    const confirmed = confirm(
+      "Clear every box in this form?\n\nThis only empties the form on screen - nothing on the website changes until you press Save.",
+    );
+    if (!confirmed) return;
+
+    formRef.current
+      ?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea")
+      .forEach((field) => {
+        field.value = "";
+      });
+  }
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form ref={formRef} action={formAction} className="space-y-6">
       {/* 1. Date */}
       <TextField
         label="1. Date"
@@ -151,8 +165,15 @@ export default function DevotionForm({ devotion }: { devotion: Devotion }) {
         defaultValue={devotion.prayer}
       />
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <SaveButton />
+        <button
+          type="button"
+          onClick={handleClearAll}
+          className="rounded-lg border border-sand px-4 py-2.5 text-sm font-semibold text-ink-soft transition-colors hover:border-ember hover:text-red-300"
+        >
+          Clear All
+        </button>
         {state ? (
           <span
             className={`text-sm ${state.ok ? "text-ink-soft" : "text-red-300"}`}
