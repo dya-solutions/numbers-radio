@@ -11,8 +11,9 @@ Counts.*
 | **Listen** | `/` | Homepage with a live audio player for the radio stream. |
 | **Program Guide** | `/program-guide` | The on-air schedule. Hand-written for now; later it pulls from AzuraCast automatically. |
 | **Daily Devotion** | `/daily-devotion` | An eight-section devotion (date, source line, title, scripture, body, further study, golden nugget, prayer) that you edit from `/admin`. |
-| **Feedback & Prayer** | `/feedback` | Two forms - feedback and prayer requests - that save to a Supabase database. |
-| **Staff area (password-protected)** | `/admin` | Feedback + prayer submissions, and editors for the Daily Devotion and Program Guide. |
+| **Prayer Points** | `/prayer-points` | A list of prayer points, newest first, each with a "Read more" link to a news story. |
+| **Feedback** | `/feedback` | Two forms - feedback and prayer requests - that save to a Supabase database. |
+| **Staff area (password-protected)** | `/admin` | Feedback + prayer submissions, and editors for the Daily Devotion, Program Guide, and Prayer Points. |
 
 ---
 
@@ -29,7 +30,13 @@ Sign in to `/admin` and open **Edit Program Guide**. Add, change, or remove
 shows (Day, Time, Show name, Short description). The public page updates straight
 away.
 
-### 3. The stream address, station links, and admin password
+### 3. Prayer points
+Sign in to `/admin` and open **Edit Prayer Points**. Paste a link to a news
+story, write a short title or description for it, and press **Add prayer
+point**. Edit or remove any entry the same way. The public page updates
+straight away, newest first.
+
+### 4. The stream address, station links, and admin password
 These live in **environment variables** (see setup below). You never edit code
 for these - you change them in one settings screen.
 
@@ -52,11 +59,12 @@ You need three free accounts: **GitHub** (you already have this), **Supabase**
 4. In the left menu, open **SQL Editor** -> **New query**.
 5. Open the file [`supabase/schema.sql`](supabase/schema.sql) from this project,
    copy everything in it, paste it into the query box, and click **Run**.
-   You should see "Success". This creates the three tables the site uses:
-   `submissions`, `devotion`, and `schedule_entries`.
+   You should see "Success". This creates the four tables the site uses:
+   `submissions`, `devotion`, `schedule_entries`, and `prayer_points`.
    - *Already had the site running from before?* Run
      [`supabase/update-devotion-sections.sql`](supabase/update-devotion-sections.sql)
-     as well - it adds the new devotion sections and keeps your existing text.
+     and [`supabase/add-prayer-points.sql`](supabase/add-prayer-points.sql) as
+     well - they add the newer pieces and keep your existing text.
 6. In the left menu, open **Project Settings** (the gear) -> **API**. Keep this
    tab open - you need two values from it:
    - **Project URL** (looks like `https://abcdefg.supabase.co`)
@@ -120,13 +128,16 @@ Then open <http://localhost:3000>.
 
 - **Framework:** Next.js (App Router), TypeScript, Tailwind CSS v4.
 - **Data:** Supabase tables `public.submissions`, `public.devotion` (single row,
-  `id = 1`), `public.schedule_entries`. All reads/writes go through the service
-  role key on the server ([`lib/supabaseServer.ts`](lib/supabaseServer.ts),
-  [`lib/content.ts`](lib/content.ts)); RLS is on with no public policies, so the
-  tables are server-only. `content/devotion.ts` and `content/schedule.ts` remain
-  as read-only fallbacks when the database is unreachable.
-- **Admin editors:** [`app/admin/devotion`](app/admin/devotion) and
-  [`app/admin/schedule`](app/admin/schedule) use server actions that
+  `id = 1`), `public.schedule_entries`, `public.prayer_points`. All reads/writes
+  go through the service role key on the server
+  ([`lib/supabaseServer.ts`](lib/supabaseServer.ts), [`lib/content.ts`](lib/content.ts));
+  RLS is on with no public policies, so the tables are server-only.
+  `content/devotion.ts` and `content/schedule.ts` remain as read-only fallbacks
+  when the database is unreachable (prayer points has no fallback file - an
+  empty or unreachable table just shows an empty-state message).
+- **Admin editors:** [`app/admin/devotion`](app/admin/devotion),
+  [`app/admin/schedule`](app/admin/schedule), and
+  [`app/admin/prayer-points`](app/admin/prayer-points) use server actions that
   `revalidatePath` the public pages, which are `force-dynamic`.
 - **Admin auth:** HTTP Basic Auth in [`middleware.ts`](middleware.ts) using
   `ADMIN_USERNAME` / `ADMIN_PASSWORD`; the matcher also covers the server-action
@@ -135,6 +146,8 @@ Then open <http://localhost:3000>.
   setup. [`supabase/update-devotion-sections.sql`](supabase/update-devotion-sections.sql)
   migrates an older `devotion` table (renames `reflection` to `body`, adds
   `source_line` / `further_study` / `golden_nugget`).
+  [`supabase/add-prayer-points.sql`](supabase/add-prayer-points.sql) adds the
+  `prayer_points` table to an existing database.
 - **Program Guide TODO:** replace the `schedule_entries` read in
   [`lib/content.ts`](lib/content.ts) with a fetch to
   `${NEXT_PUBLIC_AZURACAST_BASE_URL}/api/station/${NEXT_PUBLIC_AZURACAST_STATION_ID}/schedule`.

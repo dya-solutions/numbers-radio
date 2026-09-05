@@ -7,7 +7,7 @@ export default function HomePage() {
     <div className="space-y-12">
       <section className="text-center">
         <h1 className="m-0 text-4xl sm:text-5xl">Numbers Christian Radio</h1>
-        <p className="mt-3 text-xl font-bold uppercase tracking-widest text-gold sm:text-2xl">
+        <p className="mt-3 text-xl font-bold text-gold sm:text-2xl">
           {STATION_TAGLINE}
         </p>
       </section>

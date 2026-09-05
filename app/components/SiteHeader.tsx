@@ -11,7 +11,8 @@ const links = [
   { href: "/", label: "Listen" },
   { href: "/program-guide", label: "Program Guide" },
   { href: "/daily-devotion", label: "Daily Devotion" },
-  { href: "/feedback", label: "Feedback & Prayer" },
+  { href: "/prayer-points", label: "Prayer Points" },
+  { href: "/feedback", label: "Feedback" },
 ];
 
 export default function SiteHeader() {

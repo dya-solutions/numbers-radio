@@ -127,3 +127,21 @@ select * from (values
   ('Sunday', '6:00 PM', 'Songs of the Church','Worship music from around the world.')
 ) as seed(day, time_label, show_name, description)
 where not exists (select 1 from public.schedule_entries);
+
+
+-- ---------------------------------------------------------------------------
+-- PRAYER POINTS
+-- One row per entry. Each links out to an external news story. The /admin
+-- editor adds, changes, and removes these. Shown newest first.
+-- ---------------------------------------------------------------------------
+create table if not exists public.prayer_points (
+  id          uuid primary key default gen_random_uuid(),
+  created_at  timestamptz not null default now(),
+  title       text not null default '',
+  url         text not null default ''
+);
+
+alter table public.prayer_points enable row level security;
+
+create index if not exists prayer_points_created_at_idx
+  on public.prayer_points (created_at desc);

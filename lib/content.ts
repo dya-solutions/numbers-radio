@@ -133,3 +133,34 @@ export async function getGroupedSchedule(): Promise<ScheduleDayGroup[]> {
   }
   return groups;
 }
+
+/* ===========================================================================
+   PRAYER POINTS
+   Each entry links out to an external news story. Stored one-per-row in the
+   Supabase "prayer_points" table.
+   =========================================================================== */
+
+export interface PrayerPoint {
+  id: string;
+  title: string;
+  url: string;
+  createdAt: string;
+}
+
+/** Newest first. Throws if the database is not configured. */
+export async function listPrayerPoints(): Promise<PrayerPoint[]> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("prayer_points")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => ({
+    id: String(row.id),
+    title: row.title ?? "",
+    url: row.url ?? "",
+    createdAt: row.created_at,
+  }));
+}
