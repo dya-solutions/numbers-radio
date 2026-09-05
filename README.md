@@ -139,9 +139,14 @@ Then open <http://localhost:3000>.
   [`app/admin/schedule`](app/admin/schedule), and
   [`app/admin/prayer-points`](app/admin/prayer-points) use server actions that
   `revalidatePath` the public pages, which are `force-dynamic`.
+- **Prayer point titles:** the editor auto-fills the title from the pasted
+  link via [`app/admin/api/fetch-title`](app/admin/api/fetch-title/route.ts)
+  (reads `<title>` / `og:title`, 6s timeout, blocks local addresses). It sits
+  under `/admin` so the same Basic Auth protects it. Any failure just leaves
+  the title for the editor to type - it never blocks the save.
 - **Admin auth:** HTTP Basic Auth in [`middleware.ts`](middleware.ts) using
   `ADMIN_USERNAME` / `ADMIN_PASSWORD`; the matcher also covers the server-action
-  POSTs.
+  POSTs and the fetch-title route.
 - **SQL:** [`supabase/schema.sql`](supabase/schema.sql) is the full, idempotent
   setup. [`supabase/update-devotion-sections.sql`](supabase/update-devotion-sections.sql)
   migrates an older `devotion` table (renames `reflection` to `body`, adds

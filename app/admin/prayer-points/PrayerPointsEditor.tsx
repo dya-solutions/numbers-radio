@@ -12,28 +12,110 @@ import {
 const inputClass =
   "w-full rounded-lg border border-sand bg-surface-2 px-3 py-2 outline-none focus:border-ember";
 
+type FetchStatus = "idle" | "loading" | "done" | "error";
+
 function Fields({ entry }: { entry?: PrayerPoint }) {
+  const [url, setUrl] = useState(entry?.url ?? "");
+  const [title, setTitle] = useState(entry?.title ?? "");
+  // True once the user types in the title box - we never overwrite after that.
+  const [titleTouched, setTitleTouched] = useState(Boolean(entry?.title));
+  const [status, setStatus] = useState<FetchStatus>("idle");
+  const [hint, setHint] = useState("");
+  const lastFetched = useRef("");
+
+  async function fetchTitleFor(rawUrl: string, force = false) {
+    let link = rawUrl.trim();
+    if (!link) return;
+    // Match the server: a pasted bare domain still gets looked up.
+    if (!/^https?:\/\//i.test(link)) link = `https://${link}`;
+    // Respect a title the user has edited, unless they explicitly ask again.
+    if (titleTouched && !force) return;
+    if (lastFetched.current === link && !force) return; // already tried this link
+
+    lastFetched.current = link;
+    setStatus("loading");
+    setHint("");
+
+    try {
+      const res = await fetch(
+        `/admin/api/fetch-title?url=${encodeURIComponent(link)}`,
+      );
+      const data: { title?: string; error?: string } = await res
+        .json()
+        .catch(() => ({}));
+
+      if (res.ok && data.title) {
+        setTitle(data.title);
+        setTitleTouched(false);
+        setStatus("done");
+        setHint("Title filled in from the link - edit it below if needed.");
+      } else {
+        setStatus("error");
+        setHint(
+          `${data.error ?? "Could not read the page title."} You can type one below.`,
+        );
+      }
+    } catch {
+      setStatus("error");
+      setHint("Could not read the page title. You can type one below.");
+    }
+  }
+
   return (
     <div className="space-y-3">
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-ink">Link</span>
+        <div className="flex gap-2">
+          <input
+            name="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onBlur={(e) => fetchTitleFor(e.target.value)}
+            onPaste={(e) => {
+              const pasted = e.clipboardData.getData("text");
+              if (pasted) setTimeout(() => fetchTitleFor(pasted), 0);
+            }}
+            placeholder="Paste the news story link here"
+            className={inputClass}
+          />
+          <button
+            type="button"
+            onClick={() => fetchTitleFor(url, true)}
+            disabled={!url.trim() || status === "loading"}
+            className="shrink-0 rounded-lg border border-sand px-3 py-2 text-sm text-ink-soft transition-colors hover:border-gold hover:text-gold disabled:opacity-50"
+          >
+            Get title
+          </button>
+        </div>
+      </label>
+
       <label className="block">
         <span className="mb-1 block text-sm font-medium text-ink">
           Title or short description
         </span>
         <input
           name="title"
-          defaultValue={entry?.title ?? ""}
-          placeholder="e.g. Pray for families affected by the flooding in ..."
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            setTitleTouched(true);
+          }}
+          placeholder="Filled in from the link - or type your own"
           className={inputClass}
         />
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium text-ink">Link</span>
-        <input
-          name="url"
-          defaultValue={entry?.url ?? ""}
-          placeholder="Paste the news story link here"
-          className={inputClass}
-        />
+        {status === "loading" ? (
+          <span className="mt-1 block text-sm text-ink-soft">
+            Fetching the page title...
+          </span>
+        ) : hint ? (
+          <span
+            className={`mt-1 block text-sm ${
+              status === "error" ? "text-red-300" : "text-ink-soft"
+            }`}
+          >
+            {hint}
+          </span>
+        ) : null}
       </label>
     </div>
   );
@@ -47,7 +129,8 @@ export default function PrayerPointsEditor({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState<ActionResult | null>(null);
   const [isPending, startTransition] = useTransition();
-  const addFormRef = useRef<HTMLFormElement>(null);
+  // Bumping this remounts the "add" form so its fields reset after a save.
+  const [addFormKey, setAddFormKey] = useState(0);
 
   function run(
     action: (fd: FormData) => Promise<ActionResult>,
@@ -79,16 +162,19 @@ export default function PrayerPointsEditor({
       {/* Add a new prayer point */}
       <section className="rounded-xl border border-sand bg-surface p-6">
         <h2 className="m-0 text-xl text-gold">Add a prayer point</h2>
+        <p className="mt-1 text-sm text-ink-soft">
+          Paste the link first - the title is pulled from the page
+          automatically, and you can edit it before saving.
+        </p>
         <form
-          ref={addFormRef}
           className="mt-4 space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
-            run(addPrayerPoint, fd, () => addFormRef.current?.reset());
+            run(addPrayerPoint, fd, () => setAddFormKey((k) => k + 1));
           }}
         >
-          <Fields />
+          <Fields key={addFormKey} />
           <button
             type="submit"
             disabled={isPending}
