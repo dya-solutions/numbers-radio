@@ -89,15 +89,15 @@ create index if not exists schedule_entries_created_at_idx
 
 insert into public.schedule_entries (day, time_label, show_name, description)
 select * from (values
-  ('Weekday Mornings (Monday - Friday)', '6:00 AM',  'First Light',       'Gentle worship and Scripture to begin the day. With Grace Okafor.'),
-  ('Weekday Mornings (Monday - Friday)', '8:00 AM',  'The Morning Word',   'A short teaching and prayer over the day ahead. With Pastor Daniel Reyes.'),
-  ('Weekday Mornings (Monday - Friday)', '10:00 AM', 'Hymns & History',    'Classic hymns and the stories behind them.'),
-  ('Weekday Afternoons (Monday - Friday)', '12:00 PM', 'Midday Rest',      'Quiet instrumental worship for the lunch hour.'),
-  ('Weekday Afternoons (Monday - Friday)', '3:00 PM',  'Every Soul Counts','Listener stories, encouragement, and prayer requests.'),
-  ('Weekday Afternoons (Monday - Friday)', '5:00 PM',  'Drive Home Praise','Uplifting contemporary worship for the commute.'),
-  ('Evenings (Every Night)', '8:00 PM',  'Evening Prayer',   'A guided time of prayer and reflection.'),
-  ('Evenings (Every Night)', '10:00 PM', 'Through the Night','Soft worship music until morning.'),
-  ('Sunday', '9:00 AM', 'Sunday Gathering',  'A full worship service with teaching.'),
-  ('Sunday', '6:00 PM', 'Songs of the Church','Worship music from around the world.')
+  ('Weekday Mornings (Monday - Friday)', '06:00',  'First Light',       'Gentle worship and Scripture to begin the day. With Grace Okafor.'),
+  ('Weekday Mornings (Monday - Friday)', '08:00',  'The Morning Word',   'A short teaching and prayer over the day ahead. With Pastor Daniel Reyes.'),
+  ('Weekday Mornings (Monday - Friday)', '10:00', 'Hymns & History',    'Classic hymns and the stories behind them.'),
+  ('Weekday Afternoons (Monday - Friday)', '12:00', 'Midday Rest',      'Quiet instrumental worship for the lunch hour.'),
+  ('Weekday Afternoons (Monday - Friday)', '15:00',  'Every Soul Counts','Listener stories, encouragement, and prayer requests.'),
+  ('Weekday Afternoons (Monday - Friday)', '17:00',  'Drive Home Praise','Uplifting contemporary worship for the commute.'),
+  ('Evenings (Every Night)', '20:00',  'Evening Prayer',   'A guided time of prayer and reflection.'),
+  ('Evenings (Every Night)', '22:00', 'Through the Night','Soft worship music until morning.'),
+  ('Sunday', '09:00', 'Sunday Gathering',  'A full worship service with teaching.'),
+  ('Sunday', '18:00', 'Songs of the Church','Worship music from around the world.')
 ) as seed(day, time_label, show_name, description)
 where not exists (select 1 from public.schedule_entries);

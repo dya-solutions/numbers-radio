@@ -25,11 +25,17 @@ function Fields({ entry }: { entry?: ScheduleEntry }) {
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-ink">Time</span>
+        <span className="mb-1 block text-sm font-medium text-ink">
+          Time (24-hour)
+        </span>
         <input
           name="time_label"
           defaultValue={entry?.timeLabel ?? ""}
-          placeholder="e.g. 8:00 AM"
+          placeholder="e.g. 08:00 or 18:30"
+          pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]"
+          title="Use the 24-hour clock, like 09:00 or 18:30"
+          maxLength={5}
+          autoComplete="off"
           className={inputClass}
         />
       </label>

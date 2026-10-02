@@ -23,7 +23,10 @@ export default async function AdminSchedulePage() {
             Program Guide page
           </a>{" "}
           updates straight away. Shows are grouped by whatever you type in the{" "}
-          <strong>Day</strong> box, in the order you add them.
+          <strong>Day</strong> box (days appear in the order you first add
+          them), and each day is sorted by time automatically. Enter times on
+          the 24-hour clock, like <strong>09:00</strong> or{" "}
+          <strong>18:30</strong>.
         </p>
       </header>
 

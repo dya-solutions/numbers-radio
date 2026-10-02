@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "./supabaseServer";
+import { normalizeTime24, sortScheduleEntries } from "./time";
 import { devotion as devotionFallback } from "@/content/devotion";
 import { weeklySchedule } from "@/content/schedule";
 
@@ -80,7 +81,12 @@ export interface ScheduleDayGroup {
   entries: ScheduleEntry[];
 }
 
-/** Raw list, oldest first. Throws if the database is not configured. */
+/**
+ * All shows, grouped by day (days in the order they were first added) and
+ * sorted by time within each day, in 24-hour format. Used by both the public
+ * page and the admin editor, so what you edit matches what is live.
+ * Throws if the database is not configured.
+ */
 export async function listScheduleEntries(): Promise<ScheduleEntry[]> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
@@ -90,24 +96,32 @@ export async function listScheduleEntries(): Promise<ScheduleEntry[]> {
 
   if (error) throw new Error(error.message);
 
-  return (data ?? []).map((row) => ({
-    id: String(row.id),
-    day: row.day ?? "",
-    timeLabel: row.time_label ?? "",
-    showName: row.show_name ?? "",
-    description: row.description ?? "",
-  }));
+  const entries = (data ?? []).map((row) => {
+    const timeLabel: string = row.time_label ?? "";
+    return {
+      id: String(row.id),
+      day: row.day ?? "",
+      // Older entries saved as "6:00 AM" are shown as "06:00".
+      timeLabel: normalizeTime24(timeLabel) ?? timeLabel,
+      showName: row.show_name ?? "",
+      description: row.description ?? "",
+    };
+  });
+
+  return sortScheduleEntries(entries);
 }
 
 const scheduleFileFallback: ScheduleDayGroup[] = weeklySchedule.map((d) => ({
   day: d.day,
-  entries: d.entries.map((e, i) => ({
-    id: `fallback-${i}`,
-    day: d.day,
-    timeLabel: e.time,
-    showName: e.title,
-    description: e.host ? `${e.description} ${e.host}` : e.description,
-  })),
+  entries: sortScheduleEntries(
+    d.entries.map((e, i) => ({
+      id: `fallback-${i}`,
+      day: d.day,
+      timeLabel: normalizeTime24(e.time) ?? e.time,
+      showName: e.title,
+      description: e.host ? `${e.description} ${e.host}` : e.description,
+    })),
+  ),
 }));
 
 /** Entries grouped by day, in the order days first appear. Used by the public page. */

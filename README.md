@@ -27,8 +27,9 @@ no files.
 
 ### 2. The program guide
 Sign in to `/admin` and open **Edit Program Guide**. Add, change, or remove
-shows (Day, Time, Show name, Short description). The public page updates straight
-away.
+shows (Day, Time, Show name, Short description). Type times on the 24-hour clock
+(like `09:00` or `18:30`); each day sorts itself by time. The public page updates
+straight away.
 
 ### 3. Prayer points
 Sign in to `/admin` and open **Edit Prayer Points**. Paste a link to a news
@@ -63,8 +64,9 @@ You need three free accounts: **GitHub** (you already have this), **Supabase**
    `submissions`, `devotion`, `schedule_entries`, and `prayer_points`.
    - *Already had the site running from before?* Run
      [`supabase/update-devotion-sections.sql`](supabase/update-devotion-sections.sql)
-     and [`supabase/add-prayer-points.sql`](supabase/add-prayer-points.sql) as
-     well - they add the newer pieces and keep your existing text.
+     [`supabase/add-prayer-points.sql`](supabase/add-prayer-points.sql), and
+     [`supabase/update-schedule-times-24h.sql`](supabase/update-schedule-times-24h.sql)
+     as well - they add the newer pieces and keep your existing text.
 6. In the left menu, open **Project Settings** (the gear) -> **API**. Keep this
    tab open - you need two values from it:
    - **Project URL** (looks like `https://abcdefg.supabase.co`)
@@ -153,6 +155,10 @@ Then open <http://localhost:3000>.
   `source_line` / `further_study` / `golden_nugget`).
   [`supabase/add-prayer-points.sql`](supabase/add-prayer-points.sql) adds the
   `prayer_points` table to an existing database.
+  [`supabase/update-schedule-times-24h.sql`](supabase/update-schedule-times-24h.sql)
+  rewrites saved Program Guide times (`6:00 PM` -> `18:00`). Times are stored as
+  zero-padded 24-hour `HH:MM`; [`lib/time.ts`](lib/time.ts) normalises input,
+  still reads old 12-hour values, and sorts each day by time.
 - **Program Guide TODO:** replace the `schedule_entries` read in
   [`lib/content.ts`](lib/content.ts) with a fetch to
   `${NEXT_PUBLIC_AZURACAST_BASE_URL}/api/station/${NEXT_PUBLIC_AZURACAST_STATION_ID}/schedule`.
