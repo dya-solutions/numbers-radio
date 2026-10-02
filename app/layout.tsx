@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import SiteHeader from "./components/SiteHeader";
+import PlayerProvider from "./components/PlayerProvider";
+import MiniPlayer from "./components/MiniPlayer";
 import { STATION_NAME, STATION_TAGLINE, PRODUCT_FAMILY_URL } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -20,23 +22,28 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col">
-        <SiteHeader />
+        {/* The player lives here, above every page, so audio survives navigation. */}
+        <PlayerProvider>
+          <SiteHeader />
 
-        <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10">{children}</main>
+          <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10">{children}</main>
 
-        <footer className="border-t border-sand bg-sand/40">
-          <div className="mx-auto max-w-4xl px-4 py-6 text-sm text-ink-soft">
-            <p className="m-0">
-              {STATION_NAME} - {STATION_TAGLINE}
-            </p>
-            <p className="m-0 mt-1">
-              Part of the Numbers family -{" "}
-              <a href={PRODUCT_FAMILY_URL} target="_blank" rel="noreferrer">
-                trynumbers.com
-              </a>
-            </p>
-          </div>
-        </footer>
+          <footer className="border-t border-sand bg-sand/40">
+            <div className="mx-auto max-w-4xl px-4 py-6 text-sm text-ink-soft">
+              <p className="m-0">
+                {STATION_NAME} - {STATION_TAGLINE}
+              </p>
+              <p className="m-0 mt-1">
+                Part of the Numbers family -{" "}
+                <a href={PRODUCT_FAMILY_URL} target="_blank" rel="noreferrer">
+                  trynumbers.com
+                </a>
+              </p>
+            </div>
+          </footer>
+
+          <MiniPlayer />
+        </PlayerProvider>
       </body>
     </html>
   );
