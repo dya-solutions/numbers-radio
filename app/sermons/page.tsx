@@ -23,7 +23,15 @@ export default async function SermonsPage() {
       <header>
         <h1 className="text-3xl">Sermons</h1>
         <p className="mt-2 text-ink-soft">
-          Watch recent messages on YouTube.
+          Watch recent messages on{" "}
+          <a
+            href="https://www.youtube.com/@phaneroo"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            YouTube
+          </a>
+          .
         </p>
       </header>
 
