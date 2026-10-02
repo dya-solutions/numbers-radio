@@ -12,6 +12,7 @@ const links = [
   { href: "/program-guide", label: "Program Guide" },
   { href: "/daily-devotion", label: "Daily Devotion" },
   { href: "/prayer-points", label: "Prayer Points" },
+  { href: "/sermons", label: "Sermons" },
   { href: "/feedback", label: "Feedback" },
 ];
 

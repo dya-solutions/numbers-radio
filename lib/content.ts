@@ -178,3 +178,34 @@ export async function listPrayerPoints(): Promise<PrayerPoint[]> {
     createdAt: row.created_at,
   }));
 }
+
+/* ===========================================================================
+   SERMONS
+   Each entry links to a YouTube video. Stored one-per-row in the Supabase
+   "sermons" table.
+   =========================================================================== */
+
+export interface Sermon {
+  id: string;
+  title: string;
+  url: string;
+  createdAt: string;
+}
+
+/** Newest first. Throws if the database is not configured. */
+export async function listSermons(): Promise<Sermon[]> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("sermons")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => ({
+    id: String(row.id),
+    title: row.title ?? "",
+    url: row.url ?? "",
+    createdAt: row.created_at,
+  }));
+}

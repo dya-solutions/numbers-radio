@@ -8,6 +8,7 @@ const tabs = [
   { href: "/admin/devotion", label: "Edit Daily Devotion" },
   { href: "/admin/schedule", label: "Edit Program Guide" },
   { href: "/admin/prayer-points", label: "Edit Prayer Points" },
+  { href: "/admin/sermons", label: "Edit Sermons" },
 ];
 
 export default function AdminNav() {

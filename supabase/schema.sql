@@ -165,3 +165,21 @@ alter table public.prayer_points enable row level security;
 
 create index if not exists prayer_points_created_at_idx
   on public.prayer_points (created_at desc);
+
+
+-- ---------------------------------------------------------------------------
+-- SERMONS
+-- One row per sermon. Each links to a YouTube video. The /admin editor adds,
+-- changes, and removes these. Shown newest first.
+-- ---------------------------------------------------------------------------
+create table if not exists public.sermons (
+  id          uuid primary key default gen_random_uuid(),
+  created_at  timestamptz not null default now(),
+  title       text not null default '',
+  url         text not null default ''
+);
+
+alter table public.sermons enable row level security;
+
+create index if not exists sermons_created_at_idx
+  on public.sermons (created_at desc);
