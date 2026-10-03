@@ -10,14 +10,28 @@ import { PauseIcon, PlayIcon } from "./PlayerIcons";
  * never interrupts the stream.
  */
 export default function AudioPlayer() {
-  const { status, volume, setVolume, toggle } = usePlayer();
+  const { status, volume, setVolume, toggle, retry } = usePlayer();
 
   const label =
     status === "playing"
       ? "Pause"
       : status === "loading"
         ? "Connecting..."
-        : "Listen Live";
+        : status === "reconnecting"
+          ? "Reconnecting..."
+          : "Listen Live";
+
+  const detail =
+    status === "playing"
+      ? `You are listening to ${STATION_NAME}`
+      : status === "reconnecting"
+        ? "The connection dropped - reconnecting automatically. You don't need to do anything."
+        : status === "error"
+          ? "The stream could not be started. Please tap Try Again."
+          : "Tap to start the live broadcast";
+
+  const busy =
+    status === "playing" || status === "loading" || status === "reconnecting";
 
   return (
     <div className="rounded-2xl border border-sand bg-surface p-6 shadow-sm">
@@ -28,22 +42,35 @@ export default function AudioPlayer() {
           className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-ember text-white shadow transition-transform hover:scale-105 hover:bg-ember-dark"
           aria-label={label}
         >
-          {status === "playing" || status === "loading" ? (
-            <PauseIcon />
-          ) : (
-            <PlayIcon />
-          )}
+          {busy ? <PauseIcon /> : <PlayIcon />}
         </button>
 
-        <div className="min-w-0">
-          <p className="m-0 text-lg font-semibold text-ink">{label}</p>
-          <p className="m-0 text-sm text-ink-soft">
-            {status === "playing"
-              ? `You are listening to ${STATION_NAME}`
-              : status === "error"
-                ? "The stream could not be reached. Please try again shortly."
-                : "Tap to start the live broadcast"}
+        <div className="min-w-0" aria-live="polite">
+          <p className="m-0 flex items-center gap-2 text-lg font-semibold text-ink">
+            {label}
+            {status === "reconnecting" ? (
+              <span
+                aria-hidden="true"
+                className="inline-block h-2 w-2 animate-pulse rounded-full bg-gold"
+              />
+            ) : null}
           </p>
+          <p
+            className={`m-0 text-sm ${
+              status === "error" ? "text-red-300" : "text-ink-soft"
+            }`}
+          >
+            {detail}
+          </p>
+          {status === "error" || status === "reconnecting" ? (
+            <button
+              type="button"
+              onClick={retry}
+              className="mt-3 rounded-lg border border-gold px-3 py-1.5 text-sm font-semibold text-gold transition-colors hover:bg-gold hover:text-black"
+            >
+              Try Again
+            </button>
+          ) : null}
         </div>
       </div>
 

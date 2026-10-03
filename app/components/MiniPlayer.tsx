@@ -12,21 +12,31 @@ import { PauseIcon, PlayIcon } from "./PlayerIcons";
  */
 export default function MiniPlayer() {
   const pathname = usePathname();
-  const { status, volume, setVolume, toggle } = usePlayer();
+  const { status, volume, setVolume, toggle, retry } = usePlayer();
 
   if (pathname === "/") return null;
 
-  const active = status === "playing" || status === "loading";
-  const label = status === "playing" ? "Pause" : status === "loading" ? "Connecting..." : "Listen Live";
+  const active =
+    status === "playing" || status === "loading" || status === "reconnecting";
+  const label =
+    status === "playing"
+      ? "Pause"
+      : status === "loading"
+        ? "Connecting..."
+        : status === "reconnecting"
+          ? "Reconnecting..."
+          : "Listen Live";
 
   const statusText =
     status === "playing"
       ? "Live now"
       : status === "loading"
         ? "Connecting..."
-        : status === "error"
-          ? "Stream unavailable - tap to retry"
-          : "Tap to listen live";
+        : status === "reconnecting"
+          ? "Reconnecting..."
+          : status === "error"
+            ? "Could not start the stream"
+            : "Tap to listen live";
 
   return (
     <>
@@ -53,32 +63,49 @@ export default function MiniPlayer() {
               {STATION_NAME}
             </p>
             <p
+              aria-live="polite"
               className={`m-0 flex items-center gap-1.5 truncate text-xs ${
                 status === "error" ? "text-red-300" : "text-ink-soft"
               }`}
             >
-              {status === "playing" ? (
+              {status === "playing" || status === "reconnecting" ? (
                 <span
                   aria-hidden="true"
-                  className="inline-block h-2 w-2 shrink-0 animate-pulse rounded-full bg-ember"
+                  className={`inline-block h-2 w-2 shrink-0 animate-pulse rounded-full ${
+                    status === "playing" ? "bg-ember" : "bg-gold"
+                  }`}
                 />
               ) : null}
-              <span className={status === "playing" ? "text-gold" : undefined}>
+              <span
+                className={
+                  status === "playing" || status === "reconnecting" ? "text-gold" : undefined
+                }
+              >
                 {statusText}
               </span>
             </p>
           </div>
 
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={volume}
-            onChange={(e) => setVolume(Number(e.target.value))}
-            className="h-1 w-20 shrink-0 accent-ember sm:w-32"
-            aria-label="Volume"
-          />
+          {status === "error" || status === "reconnecting" ? (
+            <button
+              type="button"
+              onClick={retry}
+              className="shrink-0 rounded-lg border border-gold px-3 py-1.5 text-sm font-semibold text-gold transition-colors hover:bg-gold hover:text-black"
+            >
+              Try Again
+            </button>
+          ) : (
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={volume}
+              onChange={(e) => setVolume(Number(e.target.value))}
+              className="h-1 w-20 shrink-0 accent-ember sm:w-32"
+              aria-label="Volume"
+            />
+          )}
         </div>
       </div>
     </>
