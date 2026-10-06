@@ -29,7 +29,8 @@ no files.
 ### 2. The program guide
 Sign in to `/admin` and open **Edit Program Guide**. Add, change, or remove
 shows (Day, Time, Show name, Short description). Type times on the 24-hour clock
-(like `09:00` or `18:30`); each day sorts itself by time. The public page updates
+(like `09:00` or `18:30`, in Gulf Standard Time - "GST" is added automatically when
+the time is shown); each day sorts itself by time. The public page updates
 straight away.
 
 ### 3. Prayer points

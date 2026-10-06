@@ -26,7 +26,8 @@ export default async function AdminSchedulePage() {
           <strong>Day</strong> box (days appear in the order you first add
           them), and each day is sorted by time automatically. Enter times on
           the 24-hour clock, like <strong>09:00</strong> or{" "}
-          <strong>18:30</strong>.
+          <strong>18:30</strong>, in Gulf Standard Time. The &ldquo;GST&rdquo;
+          label is added automatically on the public page.
         </p>
       </header>
 

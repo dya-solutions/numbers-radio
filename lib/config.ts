@@ -7,6 +7,11 @@ export const STATION_NAME = "Numbers Radio";
 export const STATION_TAGLINE = "Every Soul Counts";
 export const PRODUCT_FAMILY_URL = "https://trynumbers.com";
 
+/** Program Guide times are stored as plain 24-hour "HH:MM" and shown in this zone. */
+export const SCHEDULE_TIMEZONE_ABBR = "GST";
+export const SCHEDULE_TIMEZONE_NAME = "Gulf Standard Time";
+export const SCHEDULE_TIMEZONE_OFFSET = "UTC+4";
+
 export const STREAM_URL =
   process.env.NEXT_PUBLIC_STREAM_URL ??
   "https://example-stream.azuracast.com/listen/numbers_radio/radio.mp3";

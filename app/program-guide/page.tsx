@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import { getGroupedSchedule } from "@/lib/content";
+import {
+  SCHEDULE_TIMEZONE_ABBR,
+  SCHEDULE_TIMEZONE_NAME,
+  SCHEDULE_TIMEZONE_OFFSET,
+} from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Program Guide",
@@ -16,8 +21,11 @@ export default async function ProgramGuidePage() {
       <header>
         <h1 className="text-3xl">Program Guide</h1>
         <p className="mt-2 text-ink-soft">
-          Here is what you can expect to hear on Numbers Radio. All times are
-          shown in the station&rsquo;s local time.
+          Here is what you can expect to hear on Numbers Radio.
+        </p>
+        <p className="mt-3 inline-block rounded-lg border border-sand border-l-gold border-l-4 bg-surface px-4 py-2 text-sm text-ink">
+          All times are in {SCHEDULE_TIMEZONE_NAME} ({SCHEDULE_TIMEZONE_ABBR},{" "}
+          {SCHEDULE_TIMEZONE_OFFSET})
         </p>
       </header>
 
@@ -34,8 +42,11 @@ export default async function ProgramGuidePage() {
                   key={entry.id}
                   className="flex flex-col gap-1 py-3 sm:flex-row sm:gap-4"
                 >
-                  <span className="w-24 shrink-0 font-semibold text-ink">
-                    {entry.timeLabel}
+                  <span className="w-28 shrink-0 font-semibold text-ink">
+                    {entry.timeLabel}{" "}
+                    <span className="text-xs font-medium text-gold">
+                      {SCHEDULE_TIMEZONE_ABBR}
+                    </span>
                   </span>
                   <span>
                     <span className="font-semibold text-ink">

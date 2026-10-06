@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import type { ScheduleEntry } from "@/lib/content";
+import { SCHEDULE_TIMEZONE_ABBR, SCHEDULE_TIMEZONE_NAME } from "@/lib/config";
 import {
   addScheduleEntry,
   updateScheduleEntry,
@@ -38,6 +39,10 @@ function Fields({ entry }: { entry?: ScheduleEntry }) {
           autoComplete="off"
           className={inputClass}
         />
+        <span className="mt-1 block text-xs text-ink-soft">
+          Times are in {SCHEDULE_TIMEZONE_NAME} ({SCHEDULE_TIMEZONE_ABBR}). Just
+          type the time - &ldquo;{SCHEDULE_TIMEZONE_ABBR}&rdquo; is added for you.
+        </span>
       </label>
       <label className="block sm:col-span-2">
         <span className="mb-1 block text-sm font-medium text-ink">Show name</span>
@@ -175,7 +180,7 @@ export default function ScheduleEditor({
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="m-0 text-sm text-ink-soft">
-                        {entry.day} - {entry.timeLabel}
+                        {entry.day} - {entry.timeLabel} {SCHEDULE_TIMEZONE_ABBR}
                       </p>
                       <p className="m-0 font-semibold text-ink">
                         {entry.showName}
