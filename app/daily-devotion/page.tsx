@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { getDevotion } from "@/lib/content";
+import { hashSpokenText } from "@/lib/devotionAudio";
+import { buildSpokenText } from "@/lib/devotionSpeech";
+import ListenToDevotion from "./ListenToDevotion";
 
 export const metadata: Metadata = {
   title: "Daily Devotion",
@@ -32,6 +35,25 @@ export default async function DailyDevotionPage() {
   const prayerParas = paragraphs(devotion.prayer);
   const hasScripture = Boolean(devotion.scriptureText || devotion.scriptureReference);
 
+  // What gets read aloud, and whether the saved AI audio was made from exactly
+  // this text. If not (or there is none), visitors get the device's own voice.
+  const spokenText = buildSpokenText(devotion);
+  const audioUrl =
+    devotion.audioUrl && spokenText && devotion.audioHash === hashSpokenText(spokenText)
+      ? devotion.audioUrl
+      : null;
+
+  if (!spokenText) {
+    return (
+      <article className="mx-auto max-w-2xl">
+        <h1 className="text-3xl">Daily Devotion</h1>
+        <p className="mt-3 text-ink-soft">
+          Today&rsquo;s devotion hasn&rsquo;t been posted yet. Please check back soon.
+        </p>
+      </article>
+    );
+  }
+
   return (
     <article className="mx-auto max-w-2xl">
       {/* 1. Date  +  2. Source line  +  3. Title */}
@@ -47,6 +69,8 @@ export default async function DailyDevotionPage() {
           </p>
         ) : null}
         <h1 className="mt-3 text-3xl">{devotion.title}</h1>
+
+        <ListenToDevotion audioUrl={audioUrl} spokenText={spokenText} />
       </header>
 
       {/* 4. Scripture */}

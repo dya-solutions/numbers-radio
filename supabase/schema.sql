@@ -95,6 +95,23 @@ on conflict (id) do nothing;
 
 
 -- ---------------------------------------------------------------------------
+-- DEVOTION AUDIO ("Listen to today's devotion")
+-- audio_url = the current MP3, audio_hash = fingerprint of the text it was made
+-- from. The MP3 lives in a public Storage bucket; only the website's server can
+-- add or delete files in it.
+-- ---------------------------------------------------------------------------
+alter table public.devotion add column if not exists audio_url  text;
+alter table public.devotion add column if not exists audio_hash text;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('devotion-audio', 'devotion-audio', true, 52428800, array['audio/mpeg'])
+on conflict (id) do update
+  set public             = true,
+      file_size_limit    = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+
+-- ---------------------------------------------------------------------------
 -- PROGRAM GUIDE
 -- One row per show. The /admin editor adds, changes, and removes these.
 -- ---------------------------------------------------------------------------

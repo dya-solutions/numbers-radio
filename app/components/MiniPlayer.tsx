@@ -12,7 +12,7 @@ import { PauseIcon, PlayIcon } from "./PlayerIcons";
  */
 export default function MiniPlayer() {
   const pathname = usePathname();
-  const { status, volume, setVolume, toggle, retry } = usePlayer();
+  const { status, volume, setVolume, toggle, retry, pausedForSpeech } = usePlayer();
 
   if (pathname === "/") return null;
 
@@ -36,7 +36,9 @@ export default function MiniPlayer() {
           ? "Reconnecting..."
           : status === "error"
             ? "Could not start the stream"
-            : "Tap to listen live";
+            : pausedForSpeech
+              ? "Paused for today's devotion"
+              : "Tap to listen live";
 
   return (
     <>

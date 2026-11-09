@@ -33,6 +33,13 @@ import { STATION_NAME, STATION_TAGLINE, STREAM_URL } from "@/lib/config";
  *   - keeps retrying quickly (0.5s, 1s, 2s, then every 3s) and never gives up
  *     while the listener has not paused.
  * If the listener paused on purpose, nothing here ever restarts playback.
+ *
+ * Making room for the Daily Devotion
+ * ----------------------------------
+ * While the devotion is being read aloud the radio is paused with holdForSpeech()
+ * and put back with releaseSpeech() - but only if it was playing before. The
+ * pause is the very same "listener paused" state as pressing pause, so none of
+ * the reconnect logic treats it as a dropped connection.
  */
 
 export type PlayerStatus =
@@ -50,6 +57,16 @@ interface PlayerContextValue {
   toggle: () => void;
   /** Start again from scratch right now (the "Try Again" button). */
   retry: () => void;
+  /**
+   * The devotion audio/voice started: pause the radio (remembering whether it
+   * was playing). `stopSpeech` is called if the listener presses play on the
+   * radio instead, so the two never talk over each other.
+   */
+  holdForSpeech: (stopSpeech: () => void) => void;
+  /** The devotion finished or was stopped: resume the radio only if it was playing. */
+  releaseSpeech: () => void;
+  /** True while the radio is paused to make room for the devotion. */
+  pausedForSpeech: boolean;
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -95,6 +112,7 @@ export default function PlayerProvider({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [status, setStatusState] = useState<PlayerStatus>("stopped");
   const [volume, setVolumeState] = useState(0.8);
+  const [pausedForSpeech, setPausedForSpeech] = useState(false);
 
   // Mirrors of state that event handlers and timers need to read "live".
   const statusRef = useRef<PlayerStatus>("stopped");
@@ -116,6 +134,8 @@ export default function PlayerProvider({
   // Handlers call each other; refs keep them free of stale closures.
   const startAttemptRef = useRef<(failuresSoFar: number) => void>(() => {});
   const failAttemptRef = useRef<() => void>(() => {});
+  /** Set while the devotion is speaking: should the radio come back afterwards? */
+  const heldRef = useRef<{ resumeRadio: boolean; stopSpeech: () => void } | null>(null);
 
   const setStatus = useCallback((next: PlayerStatus) => {
     statusRef.current = next;
@@ -237,6 +257,14 @@ export default function PlayerProvider({
 
   /** Listener pressed play (or "Try Again"): fresh start, right now. */
   const play = useCallback(() => {
+    // The listener chose the radio while the devotion was speaking: the radio
+    // wins, so end the devotion instead of playing both at once.
+    const held = heldRef.current;
+    if (held) {
+      heldRef.current = null;
+      setPausedForSpeech(false);
+      held.stopSpeech();
+    }
     wantsPlayRef.current = true;
     everConnectedRef.current = false;
     startAttempt(0);
@@ -247,6 +275,29 @@ export default function PlayerProvider({
     if (s === "playing" || s === "loading" || s === "reconnecting") stop();
     else play();
   }, [play, stop]);
+
+  const holdForSpeech = useCallback(
+    (stopSpeech: () => void) => {
+      if (heldRef.current) {
+        heldRef.current.stopSpeech = stopSpeech;
+        return;
+      }
+      // "Wants to play" is true exactly when the listener has not paused the radio.
+      const resumeRadio = wantsPlayRef.current;
+      heldRef.current = { resumeRadio, stopSpeech };
+      setPausedForSpeech(true);
+      if (resumeRadio) stop(); // same as the listener pressing pause
+    },
+    [stop],
+  );
+
+  const releaseSpeech = useCallback(() => {
+    const held = heldRef.current;
+    if (!held) return;
+    heldRef.current = null;
+    setPausedForSpeech(false);
+    if (held.resumeRadio) play(); // only if it was playing before
+  }, [play]);
 
   /** Is sound actually coming out right now? */
   const isHealthy = useCallback(() => {
@@ -409,7 +460,16 @@ export default function PlayerProvider({
 
   return (
     <PlayerContext.Provider
-      value={{ status, volume, setVolume, toggle, retry: play }}
+      value={{
+        status,
+        volume,
+        setVolume,
+        toggle,
+        retry: play,
+        holdForSpeech,
+        releaseSpeech,
+        pausedForSpeech,
+      }}
     >
       {children}
       <audio

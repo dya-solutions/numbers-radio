@@ -20,6 +20,10 @@ export interface Devotion {
   furtherStudy: string;
   goldenNugget: string;
   prayer: string;
+  /** AI audio of the devotion (empty when none has been made). */
+  audioUrl: string;
+  /** Fingerprint of the text that audio was made from. */
+  audioHash: string;
 }
 
 const devotionFileFallback: Devotion = {
@@ -32,6 +36,8 @@ const devotionFileFallback: Devotion = {
   furtherStudy: devotionFallback.furtherStudy,
   goldenNugget: devotionFallback.goldenNugget,
   prayer: devotionFallback.prayer,
+  audioUrl: "",
+  audioHash: "",
 };
 
 export async function getDevotion(): Promise<Devotion> {
@@ -56,6 +62,8 @@ export async function getDevotion(): Promise<Devotion> {
       furtherStudy: data.further_study ?? "",
       goldenNugget: data.golden_nugget ?? "",
       prayer: data.prayer ?? "",
+      audioUrl: data.audio_url ?? "",
+      audioHash: data.audio_hash ?? "",
     };
   } catch (err) {
     console.error("getDevotion: using file fallback -", err);

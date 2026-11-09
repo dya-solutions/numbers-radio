@@ -10,7 +10,7 @@ import { PauseIcon, PlayIcon } from "./PlayerIcons";
  * never interrupts the stream.
  */
 export default function AudioPlayer() {
-  const { status, volume, setVolume, toggle, retry } = usePlayer();
+  const { status, volume, setVolume, toggle, retry, pausedForSpeech } = usePlayer();
 
   const label =
     status === "playing"
@@ -28,7 +28,9 @@ export default function AudioPlayer() {
         ? "The connection dropped - reconnecting automatically. You don't need to do anything."
         : status === "error"
           ? "The stream could not be started. Please tap Try Again."
-          : "Tap to start the live broadcast";
+          : pausedForSpeech
+            ? "Paused while today's devotion plays. It will come back when the devotion ends."
+            : "Tap to start the live broadcast";
 
   const busy =
     status === "playing" || status === "loading" || status === "reconnecting";

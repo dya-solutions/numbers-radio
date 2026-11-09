@@ -1,10 +1,15 @@
 import { getDevotion } from "@/lib/content";
+import { audioInfoFor } from "@/lib/devotionAudio";
 import DevotionForm from "./DevotionForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDevotionPage() {
   const devotion = await getDevotion();
+  const audio = audioInfoFor(devotion, {
+    url: devotion.audioUrl,
+    hash: devotion.audioHash,
+  });
 
   return (
     <div className="space-y-6">
@@ -21,7 +26,7 @@ export default async function AdminDevotionPage() {
       </header>
 
       <div className="rounded-xl border border-sand bg-surface p-6">
-        <DevotionForm devotion={devotion} />
+        <DevotionForm devotion={devotion} initialAudio={audio} />
       </div>
     </div>
   );

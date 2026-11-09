@@ -11,6 +11,7 @@ Counts.*
 | **Listen** | `/` | Homepage with a live audio player for the radio stream. |
 | **Program Guide** | `/program-guide` | The on-air schedule. Hand-written for now; later it pulls from AzuraCast automatically. |
 | **Daily Devotion** | `/daily-devotion` | An eight-section devotion (date, source line, title, scripture, body, further study, golden nugget, prayer) that you edit from `/admin`. |
+| **Listen to today's devotion** | `/daily-devotion` | A button on the devotion page. It plays an AI-voiced MP3 made automatically from the devotion text (or, when that isn't ready, your device's own voice) and pauses the live radio while it plays. |
 | **Prayer Points** | `/prayer-points` | A list of prayer points, newest first, each with a "Read more" link to a news story. |
 | **Sermons** | `/sermons` | A list of sermons, newest first, each linking to its YouTube video. |
 | **Feedback** | `/feedback` | Two forms - feedback and prayer requests - that save to a Supabase database. |
@@ -33,18 +34,26 @@ shows (Day, Time, Show name, Short description). Type times on the 24-hour clock
 the time is shown); each day sorts itself by time. The public page updates
 straight away.
 
-### 3. Prayer points
+### 3. The devotion's spoken audio
+Nothing to upload. After you press **Save** in **Edit Daily Devotion**, the page
+shows "Generating audio...", then "Audio ready" with a preview player. Use
+**Regenerate audio** to make it again and **Download MP3** to get the file (for
+example to put on the radio). If you change the text later it says "Audio is out
+of date" until you regenerate. Needs the one-time setup in
+[Listen-to-the-devotion setup](#listen-to-the-devotion-setup) below.
+
+### 4. Prayer points
 Sign in to `/admin` and open **Edit Prayer Points**. Paste a link to a news
 story, write a short title or description for it, and press **Add prayer
 point**. Edit or remove any entry the same way. The public page updates
 straight away, newest first.
 
-### 4. Sermons
+### 5. Sermons
 Sign in to `/admin` and open **Edit Sermons**. Type the sermon title, paste the
 YouTube link, and press **Add sermon**. Edit or remove any entry the same way.
 The public page updates straight away, newest first.
 
-### 5. The stream address, station links, and admin password
+### 6. The stream address, station links, and admin password
 These live in **environment variables** (see setup below). You never edit code
 for these - you change them in one settings screen.
 
@@ -111,6 +120,28 @@ to add with your domain provider.
 
 ---
 
+## Listen-to-the-devotion setup
+
+The audio is made with OpenAI's text-to-speech (model `gpt-4o-mini-tts`).
+
+1. **Supabase:** run [`supabase/add-devotion-audio.sql`](supabase/add-devotion-audio.sql)
+   once (SQL Editor -> New query -> Run). It adds two columns and a public
+   storage bucket named `devotion-audio`. (`schema.sql` already includes it for fresh setups.)
+2. **OpenAI:** create an API key at <https://platform.openai.com/api-keys> (the
+   account needs billing credit). Add it to Vercel as `OPENAI_API_KEY`.
+3. **Optional voice:** set `DEVOTION_VOICE` to one of `alloy`, `ash`, `ballad`,
+   `coral`, `echo`, `fable`, `nova`, `onyx`, `sage`, `shimmer`, `verse`,
+   `marin`, `cedar`. OpenAI recommends `marin` or `cedar` for best quality
+   (`cedar` is the default). Change it, then press **Regenerate audio**.
+4. Redeploy so the new settings are picked up.
+
+> **Heads-up:** OpenAI has announced that `gpt-4o-mini-tts` stops working on
+> **6 January 2027**. Audio already made keeps playing, and visitors fall back to
+> their device's voice, but making *new* audio will need a different voice model
+> after that date. All the OpenAI code is in [`lib/tts.ts`](lib/tts.ts).
+
+---
+
 ## Finding your AzuraCast stream URL
 
 In your AzuraCast dashboard, open the station, then **Profile**. Under
@@ -157,6 +188,16 @@ Then open <http://localhost:3000>.
 - **Admin auth:** HTTP Basic Auth in [`middleware.ts`](middleware.ts) using
   `ADMIN_USERNAME` / `ADMIN_PASSWORD`; the matcher also covers the server-action
   POSTs and the fetch-title route.
+- **Devotion audio:** the admin Save action only saves text. Audio is made by a
+  separate request, `POST /admin/api/devotion-audio`
+  ([route](app/admin/api/devotion-audio/route.ts)), which is the only code that
+  calls OpenAI. It is password-protected twice (middleware + `guardAdminApi` in
+  [`lib/adminAuth.ts`](lib/adminAuth.ts), which also demands a same-origin request
+  with an `X-Requested-With` header). The MP3 is stored under a fresh name in the
+  public `devotion-audio` bucket, the previous file is deleted, and
+  `devotion.audio_hash` (SHA-256 of the spoken text) decides whether the audio is
+  current. The public page plays it only when the hash matches, otherwise it uses
+  the browser's speech synthesis.
 - **SQL:** [`supabase/schema.sql`](supabase/schema.sql) is the full, idempotent
   setup. [`supabase/update-devotion-sections.sql`](supabase/update-devotion-sections.sql)
   migrates an older `devotion` table (renames `reflection` to `body`, adds
