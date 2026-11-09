@@ -154,9 +154,11 @@ function fail(code: string, message: string, status: number): GenerateResult {
 
 const TTS_HTTP_STATUS: Record<TtsErrorCode, number> = {
   missing_api_key: 503,
+  missing_voice_id: 503,
   auth: 502,
   quota: 502,
   rate_limit: 429,
+  voice_unavailable: 502,
   bad_request: 502,
   unavailable: 502,
   network: 504,
@@ -167,7 +169,7 @@ let generating = false;
 
 /**
  * Reads the SAVED devotion, makes the audio, stores it, and records it on the
- * devotion. Skips the (paid) OpenAI call when the stored audio already matches
+ * devotion. Skips the (paid) voice-service call when the stored audio already matches
  * the text, unless `force` is set.
  */
 export async function generateDevotionAudio({ force }: { force: boolean }): Promise<GenerateResult> {

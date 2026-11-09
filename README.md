@@ -122,23 +122,24 @@ to add with your domain provider.
 
 ## Listen-to-the-devotion setup
 
-The audio is made with OpenAI's text-to-speech (model `gpt-4o-mini-tts`).
+The audio is made with ElevenLabs text-to-speech (model `eleven_multilingual_v2`,
+MP3 output).
 
 1. **Supabase:** run [`supabase/add-devotion-audio.sql`](supabase/add-devotion-audio.sql)
    once (SQL Editor -> New query -> Run). It adds two columns and a public
    storage bucket named `devotion-audio`. (`schema.sql` already includes it for fresh setups.)
-2. **OpenAI:** create an API key at <https://platform.openai.com/api-keys> (the
-   account needs billing credit). Add it to Vercel as `OPENAI_API_KEY`.
-3. **Optional voice:** set `DEVOTION_VOICE` to one of `alloy`, `ash`, `ballad`,
-   `coral`, `echo`, `fable`, `nova`, `onyx`, `sage`, `shimmer`, `verse`,
-   `marin`, `cedar`. OpenAI recommends `marin` or `cedar` for best quality
-   (`cedar` is the default). Change it, then press **Regenerate audio**.
+2. **ElevenLabs key:** in ElevenLabs open your profile -> **API Keys** -> create a
+   key (it only needs the *Text to Speech* permission). Add it to Vercel as
+   `ELEVENLABS_API_KEY`.
+3. **Voice:** in ElevenLabs open **Voices** -> **My Voices**, click the three dots
+   next to a voice -> **Copy voice ID**, and add it to Vercel as
+   `DEVOTION_VOICE_ID`. (A voice from the public Voice Library must first be
+   added to My Voices with its **+** button, and needs a paid ElevenLabs plan to
+   be used through the API.) Change it later, then press **Regenerate audio**.
 4. Redeploy so the new settings are picked up.
 
-> **Heads-up:** OpenAI has announced that `gpt-4o-mini-tts` stops working on
-> **6 January 2027**. Audio already made keeps playing, and visitors fall back to
-> their device's voice, but making *new* audio will need a different voice model
-> after that date. All the OpenAI code is in [`lib/tts.ts`](lib/tts.ts).
+All the ElevenLabs code is in [`lib/tts.ts`](lib/tts.ts), including the model and
+the calm-delivery voice settings.
 
 ---
 
@@ -191,7 +192,7 @@ Then open <http://localhost:3000>.
 - **Devotion audio:** the admin Save action only saves text. Audio is made by a
   separate request, `POST /admin/api/devotion-audio`
   ([route](app/admin/api/devotion-audio/route.ts)), which is the only code that
-  calls OpenAI. It is password-protected twice (middleware + `guardAdminApi` in
+  calls ElevenLabs. It is password-protected twice (middleware + `guardAdminApi` in
   [`lib/adminAuth.ts`](lib/adminAuth.ts), which also demands a same-origin request
   with an `X-Requested-With` header). The MP3 is stored under a fresh name in the
   public `devotion-audio` bucket, the previous file is deleted, and
