@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { listPrayerPoints, type PrayerPoint } from "@/lib/content";
+import TrackedLink from "../components/TrackedLink";
 
 export const metadata: Metadata = {
   title: "Prayer Points",
@@ -42,7 +43,9 @@ export default async function PrayerPointsPage() {
               className="flex flex-col gap-3 rounded-xl border border-sand bg-surface p-5 sm:flex-row sm:items-center sm:justify-between"
             >
               <p className="m-0 text-lg text-ink">{entry.title}</p>
-              <a
+              <TrackedLink
+                kind="prayer"
+                itemId={entry.id}
                 href={entry.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -52,7 +55,7 @@ export default async function PrayerPointsPage() {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M7 17L17 7M9 7h8v8" />
                 </svg>
-              </a>
+              </TrackedLink>
             </li>
           ))}
         </ul>

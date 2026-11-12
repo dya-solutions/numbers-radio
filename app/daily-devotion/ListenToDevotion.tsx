@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlayer } from "../components/PlayerProvider";
 import { PauseIcon, PlayIcon } from "../components/PlayerIcons";
 import { chunkText } from "@/lib/devotionSpeech";
+import { randomId, trackDevotionFinish, trackDevotionPlay } from "@/lib/analytics/client";
 
 /**
  * "Listen to today's devotion".
@@ -57,6 +58,9 @@ export default function ListenToDevotion({
   const runRef = useRef(0); // bumped on every pause/stop so old speech events are ignored
   const startTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Anonymous statistics: one id per listen, so a play and its finish can be matched.
+  const playIdRef = useRef<string | null>(null);
+
   // Radio hand-off
   const holdingRef = useRef(false);
   const stopEverythingRef = useRef<() => void>(() => {});
@@ -68,6 +72,18 @@ export default function ListenToDevotion({
         typeof SpeechSynthesisUtterance !== "undefined",
     );
   }, []);
+
+  /** A new listen has started (not a resume after pause). */
+  function countPlay(listenMode: Mode) {
+    playIdRef.current = randomId();
+    trackDevotionPlay(playIdRef.current, listenMode);
+  }
+
+  /** The devotion played all the way to the end. */
+  function countFinish() {
+    if (playIdRef.current) trackDevotionFinish(playIdRef.current);
+    playIdRef.current = null;
+  }
 
   function hold() {
     holdingRef.current = true;
@@ -92,6 +108,7 @@ export default function ListenToDevotion({
   }
 
   function stopDevice() {
+    playIdRef.current = null; // stopped (or finished - already counted by then)
     cancelSpeech();
     chunkIndexRef.current = 0;
     setChunkIndex(0);
@@ -131,7 +148,10 @@ export default function ListenToDevotion({
         };
         utterance.onend = () => {
           if (run !== runRef.current) return;
-          if (index === chunks.length - 1) stopDevice(); // finished
+          if (index === chunks.length - 1) {
+            countFinish();
+            stopDevice(); // finished
+          }
         };
         utterance.onerror = (event) => {
           if (run !== runRef.current) return;
@@ -153,6 +173,7 @@ export default function ListenToDevotion({
   /* -------------------------------- AI audio ------------------------------ */
 
   function stopAi() {
+    playIdRef.current = null; // stopped (or finished - already counted by then)
     const audio = audioRef.current;
     if (audio) {
       if (!audio.paused) ignoreNextPauseRef.current = true;
@@ -190,6 +211,7 @@ export default function ListenToDevotion({
       const audio = audioRef.current;
       if (!audio) return;
       if (audio.paused) {
+        if (playback === "idle") countPlay("ai");
         hold();
         audio.play().catch(useDeviceVoiceInstead);
       } else {
@@ -199,7 +221,10 @@ export default function ListenToDevotion({
     }
 
     if (playback === "playing") pauseDevice();
-    else speakFrom(playback === "paused" ? chunkIndexRef.current : 0);
+    else {
+      if (playback === "idle") countPlay("device");
+      speakFrom(playback === "paused" ? chunkIndexRef.current : 0);
+    }
   }
 
   // Stop speaking (and give the radio back) when the listener leaves the page.
@@ -303,7 +328,10 @@ export default function ListenToDevotion({
               }
               if (audioRef.current && !audioRef.current.ended) setPlayback("paused");
             }}
-            onEnded={stopAi}
+            onEnded={() => {
+              countFinish();
+              stopAi();
+            }}
             onError={() => {
               if (holdingRef.current || playback !== "idle") useDeviceVoiceInstead();
             }}

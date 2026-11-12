@@ -12,6 +12,8 @@
 --   devotion         - the single Daily Devotion shown on the site
 --   schedule_entries - the shows listed on the Program Guide
 --
+-- (The Statistics page has its own file: add-statistics.sql. Run it separately.)
+--
 -- Running it more than once is safe.
 -- ===========================================================================
 

@@ -15,7 +15,9 @@ Counts.*
 | **Prayer Points** | `/prayer-points` | A list of prayer points, newest first, each with a "Read more" link to a news story. |
 | **Sermons** | `/sermons` | A list of sermons, newest first, each linking to its YouTube video. |
 | **Feedback** | `/feedback` | Two forms - feedback and prayer requests - that save to a Supabase database. |
-| **Staff area (password-protected)** | `/admin` | Feedback + prayer submissions, and editors for the Daily Devotion, Program Guide, Prayer Points, and Sermons. |
+| **Statistics (password-protected)** | `/admin/statistics` | How people use the site and the player: visitors, page views, listening time, when people listen, where from, which devices, and how well the player is working. Anonymous - no cookies, no IP addresses stored. |
+| **Privacy** | `/privacy` | A short plain-language note on what is counted (linked from the footer). |
+| **Staff area (password-protected)** | `/admin` | Feedback + prayer submissions, editors for the Daily Devotion, Program Guide, Prayer Points, and Sermons, and the Statistics page. |
 
 ---
 
@@ -53,7 +55,12 @@ Sign in to `/admin` and open **Edit Sermons**. Type the sermon title, paste the
 YouTube link, and press **Add sermon**. Edit or remove any entry the same way.
 The public page updates straight away, newest first.
 
-### 6. The stream address, station links, and admin password
+### 6. Statistics
+Sign in to `/admin` and open **Statistics**. Choose Today, 7, 30 or 90 days. Every
+chart has a one-line explanation under its title. All days and hours are Gulf
+Standard Time. One-time setup: [Statistics setup](#statistics-setup) below.
+
+### 7. The stream address, station links, and admin password
 These live in **environment variables** (see setup below). You never edit code
 for these - you change them in one settings screen.
 
@@ -143,6 +150,38 @@ the calm-delivery voice settings.
 
 ---
 
+## Statistics setup
+
+The site counts its own visitors (no Google Analytics, no cookies, no outside
+scripts). It stores **anonymous** counts in your Supabase database.
+
+1. **Supabase:** run [`supabase/add-statistics.sql`](supabase/add-statistics.sql)
+   once (SQL Editor -> New query -> paste -> Run). It is safe to run again. If it
+   prints a note that `pg_cron` is not available, switch it on under
+   **Database -> Extensions** and run the file once more - that is what makes the
+   nightly cleanup automatic.
+2. **Optional but recommended:** add a private random value as `ANALYTICS_SECRET`
+   on Vercel (16+ characters). It is the secret behind the daily-changing
+   anonymous visitor code. Without it the site derives one from your Supabase
+   service key, which also works.
+3. Redeploy, open the site, then look at **Admin -> Statistics**.
+
+**What is counted:** page views (with the referring website), listening sessions
+of the radio player (start, seconds listened, reconnects, errors), devotion plays
+and whether they finished, sermon and prayer-point link clicks, that a Feedback
+or Prayer form was sent (never its content), app installs, whether the site was
+used as an app or in a browser, country / region / city (from Vercel's request
+headers), and device / browser / operating system.
+**What is not:** IP addresses, names, emails, message text, anything on `/admin`,
+and robots / crawlers.
+
+**How long:** raw events are kept 120 days; a daily-totals row is kept forever.
+A nightly database job (`pg_cron`, 03:10 GST) runs `analytics_maintenance()`,
+which first writes the daily totals and then deletes the old raw rows. The
+Statistics page shows when it last ran and has a **Clean up now** button.
+
+---
+
 ## Finding your AzuraCast stream URL
 
 In your AzuraCast dashboard, open the station, then **Profile**. Under
@@ -199,6 +238,25 @@ Then open <http://localhost:3000>.
   `devotion.audio_hash` (SHA-256 of the spoken text) decides whether the audio is
   current. The public page plays it only when the hash matches, otherwise it uses
   the browser's speech synthesis.
+- **Statistics:** the browser sends tiny one-way notes to `POST /api/track`
+  ([route](app/api/track/route.ts)); it never returns data. Pieces:
+  [`lib/analytics/validate.ts`](lib/analytics/validate.ts) (strict input checks,
+  1 KB limit), [`ua.ts`](lib/analytics/ua.ts) (device/browser/OS + bot filter),
+  [`visitor.ts`](lib/analytics/visitor.ts) (visitor code = HMAC of IP + browser
+  details with a secret salt that changes every GST day; the IP is never stored),
+  [`limit.ts`](lib/analytics/limit.ts) (in-memory rate limit; the database
+  repeats a per-visitor limit), [`record.ts`](lib/analytics/record.ts) (calls the
+  SQL functions). Client side: [`Analytics.tsx`](app/components/Analytics.tsx)
+  (page views, install), [`playerSession.ts`](lib/analytics/playerSession.ts)
+  (listening sessions; used by `PlayerProvider`), `TrackedLink` (sermon /
+  prayer clicks), `ListenToDevotion` (plays/finishes). Form submissions are
+  counted server-side in `app/feedback/actions.ts` (type only). Everything is
+  computed in SQL ([`supabase/add-statistics.sql`](supabase/add-statistics.sql):
+  `analytics_dashboard`, `analytics_maintenance`), with RLS on, no policies and
+  all rights revoked from `anon` / `authenticated`; only the service role can use
+  it. The one thing stored on the visitor's device is the date of their first
+  visit (`localStorage`, key `nr-first-visit`) to tell new from returning.
+  Visitors with a strict ad / tracker blocker may not be counted.
 - **SQL:** [`supabase/schema.sql`](supabase/schema.sql) is the full, idempotent
   setup. [`supabase/update-devotion-sections.sql`](supabase/update-devotion-sections.sql)
   migrates an older `devotion` table (renames `reflection` to `body`, adds

@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import Link from "next/link";
 import "./globals.css";
 import SiteHeader from "./components/SiteHeader";
 import PlayerProvider from "./components/PlayerProvider";
 import MiniPlayer from "./components/MiniPlayer";
+import Analytics from "./components/Analytics";
 import { STATION_NAME, STATION_TAGLINE, PRODUCT_FAMILY_URL } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -43,6 +45,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
         {/* The player lives here, above every page, so audio survives navigation. */}
         <PlayerProvider>
+          <Analytics />
           <SiteHeader />
 
           <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10">{children}</main>
@@ -57,6 +60,9 @@ export default function RootLayout({
                 <a href={PRODUCT_FAMILY_URL} target="_blank" rel="noreferrer">
                   trynumbers.com
                 </a>
+              </p>
+              <p className="m-0 mt-1">
+                <Link href="/privacy">Privacy</Link>
               </p>
             </div>
           </footer>

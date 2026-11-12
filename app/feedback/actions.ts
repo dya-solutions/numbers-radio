@@ -1,6 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
 import { getSupabaseAdmin, type SubmissionType } from "@/lib/supabaseServer";
+import { recordFormSubmission } from "@/lib/analytics/record";
 
 export interface SubmitResult {
   ok: boolean;
@@ -46,6 +48,9 @@ export async function submitEntry(
         message: "Sorry, something went wrong saving your message. Please try again later.",
       };
     }
+
+    // Statistics: count that a form was sent (only its TYPE - never the message). Can't fail the form.
+    await recordFormSubmission(type, await headers());
 
     return {
       ok: true,

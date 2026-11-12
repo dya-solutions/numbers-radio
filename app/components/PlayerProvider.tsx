@@ -9,6 +9,8 @@ import {
   useState,
 } from "react";
 import { STATION_NAME, STATION_TAGLINE, STREAM_URL } from "@/lib/config";
+import { randomId, sendEvent } from "@/lib/analytics/client";
+import { PlayerSessionTracker } from "@/lib/analytics/playerSession";
 
 /**
  * One shared audio player for the whole site.
@@ -40,6 +42,13 @@ import { STATION_NAME, STATION_TAGLINE, STREAM_URL } from "@/lib/config";
  * and put back with releaseSpeech() - but only if it was playing before. The
  * pause is the very same "listener paused" state as pressing pause, so none of
  * the reconnect logic treats it as a dropped connection.
+ *
+ * Anonymous statistics
+ * --------------------
+ * Each stretch of listening (play pressed -> paused) is one "session" counted by
+ * PlayerSessionTracker: seconds of actual sound, how many times a working
+ * connection had to be re-made, and how many connection attempts failed. It only
+ * LISTENS to what the code below already does - it never changes it.
  */
 
 export type PlayerStatus =
@@ -137,10 +146,31 @@ export default function PlayerProvider({
   /** Set while the devotion is speaking: should the radio come back afterwards? */
   const heldRef = useRef<{ resumeRadio: boolean; stopSpeech: () => void } | null>(null);
 
-  const setStatus = useCallback((next: PlayerStatus) => {
-    statusRef.current = next;
-    setStatusState(next);
+  // Anonymous listening-session counter (created on first use, in the browser).
+  const sessionRef = useRef<PlayerSessionTracker | null>(null);
+  /** True once the current dropped connection has been counted (so it counts once). */
+  const dropCountedRef = useRef(false);
+  const getSession = useCallback(() => {
+    if (!sessionRef.current) {
+      sessionRef.current = new PlayerSessionTracker({
+        send: sendEvent,
+        now: () => Date.now(),
+        newId: randomId,
+        every: (fn, ms) => setInterval(fn, ms),
+        cancel: (handle) => clearInterval(handle as ReturnType<typeof setInterval>),
+      });
+    }
+    return sessionRef.current;
   }, []);
+
+  const setStatus = useCallback(
+    (next: PlayerStatus) => {
+      statusRef.current = next;
+      setStatusState(next);
+      getSession().setPlaying(next === "playing"); // only real sound counts as listening
+    },
+    [getSession],
+  );
 
   const clearRetryTimer = useCallback(() => {
     if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
@@ -192,6 +222,12 @@ export default function PlayerProvider({
       const audio = audioRef.current;
       if (!audio || !wantsPlayRef.current) return;
 
+      // A working connection was lost and we are making a new one (counted once per drop).
+      if (everConnectedRef.current && failuresSoFar === 0 && !dropCountedRef.current) {
+        dropCountedRef.current = true;
+        getSession().reconnect();
+      }
+
       clearRetryTimer();
       failuresRef.current = failuresSoFar;
       phaseRef.current = "attempt";
@@ -215,19 +251,22 @@ export default function PlayerProvider({
           release();
           phaseRef.current = "idle";
           wantsPlayRef.current = false;
+          getSession().error();
+          getSession().end(); // the player gave up: that session is over
           setStatus("error");
           return;
         }
         failAttemptRef.current();
       });
     },
-    [clearRetryTimer, release, setStatus],
+    [clearRetryTimer, getSession, release, setStatus],
   );
 
   /** This attempt failed or timed out: try again soon (0.5s, 1s, 2s, then 3s). */
   const failAttempt = useCallback(() => {
     if (!wantsPlayRef.current) return;
     clearRetryTimer();
+    getSession().error(); // one more failed connection attempt
     const failures = failuresRef.current + 1;
     failuresRef.current = failures;
     phaseRef.current = "waiting";
@@ -238,7 +277,7 @@ export default function PlayerProvider({
       retryTimerRef.current = null;
       startAttemptRef.current(failures);
     }, delay);
-  }, [clearRetryTimer, setStatus]);
+  }, [clearRetryTimer, getSession, setStatus]);
 
   useEffect(() => {
     startAttemptRef.current = startAttempt;
@@ -250,10 +289,12 @@ export default function PlayerProvider({
     everConnectedRef.current = false;
     failuresRef.current = 0;
     phaseRef.current = "idle";
+    dropCountedRef.current = false;
     clearRetryTimer();
     release();
+    getSession().end(); // the listener paused: the session is over
     setStatus("stopped");
-  }, [clearRetryTimer, release, setStatus]);
+  }, [clearRetryTimer, getSession, release, setStatus]);
 
   /** Listener pressed play (or "Try Again"): fresh start, right now. */
   const play = useCallback(() => {
@@ -267,8 +308,10 @@ export default function PlayerProvider({
     }
     wantsPlayRef.current = true;
     everConnectedRef.current = false;
+    dropCountedRef.current = false;
+    getSession().begin(); // a new listening session
     startAttempt(0);
-  }, [startAttempt]);
+  }, [getSession, startAttempt]);
 
   const toggle = useCallback(() => {
     const s = statusRef.current;
@@ -390,6 +433,21 @@ export default function PlayerProvider({
   // Stop timers if the whole app is torn down.
   useEffect(() => clearRetryTimer, [clearRetryTimer]);
 
+  // Statistics: report progress when the page is hidden (audio may keep playing
+  // in the background), and send the final update when the page is left or closed.
+  useEffect(() => {
+    const onHidden = () => {
+      if (document.visibilityState === "hidden") getSession().flush();
+    };
+    const onLeave = () => getSession().end();
+    document.addEventListener("visibilitychange", onHidden);
+    window.addEventListener("pagehide", onLeave);
+    return () => {
+      document.removeEventListener("visibilitychange", onHidden);
+      window.removeEventListener("pagehide", onLeave);
+    };
+  }, [getSession]);
+
   // Lock-screen / headphone controls where the browser supports them.
   useEffect(() => {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
@@ -416,6 +474,7 @@ export default function PlayerProvider({
     clearRetryTimer();
     phaseRef.current = "live";
     everConnectedRef.current = true;
+    dropCountedRef.current = false; // sound is back: the next drop counts again
     failuresRef.current = 0;
     lastTimeRef.current = audio.currentTime;
     lastAdvanceAtRef.current = Date.now();

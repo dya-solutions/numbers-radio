@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { listSermons, type Sermon } from "@/lib/content";
+import TrackedLink from "../components/TrackedLink";
 
 export const metadata: Metadata = {
   title: "Sermons",
@@ -49,16 +50,20 @@ export default async function SermonsPage() {
               className="flex flex-col gap-3 rounded-xl border border-sand bg-surface p-5 sm:flex-row sm:items-center sm:justify-between"
             >
               <p className="m-0 text-lg">
-                <a
+                <TrackedLink
+                  kind="sermon"
+                  itemId={entry.id}
                   href={entry.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-ink no-underline transition-colors hover:text-gold"
                 >
                   {entry.title}
-                </a>
+                </TrackedLink>
               </p>
-              <a
+              <TrackedLink
+                kind="sermon"
+                itemId={entry.id}
                 href={entry.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -68,7 +73,7 @@ export default async function SermonsPage() {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M7 17L17 7M9 7h8v8" />
                 </svg>
-              </a>
+              </TrackedLink>
             </li>
           ))}
         </ul>
