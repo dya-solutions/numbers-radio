@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { isAdminAuthorized } from "@/lib/adminAuth";
 import { RANGES, getDashboard, parseRange } from "@/lib/analytics/stats";
 import {
@@ -18,6 +19,7 @@ import {
   referrerLabel,
 } from "@/lib/analytics/labels";
 import CleanupButton from "./CleanupButton";
+import RadioSection from "./RadioSection";
 import {
   BarList,
   Empty,
@@ -75,6 +77,12 @@ export default async function StatisticsPage({
             {r.label}
           </Link>
         ))}
+        <a
+          href="#radio"
+          className="ml-auto text-sm text-ink-soft no-underline hover:text-ink"
+        >
+          Radio listeners (all platforms) &darr;
+        </a>
       </div>
 
       {!result.ok ? (
@@ -87,6 +95,19 @@ export default async function StatisticsPage({
       ) : (
         <Dashboard data={result.data} />
       )}
+
+      {/* The station's own numbers from AzuraCast. Loads on its own, so a slow or
+          unreachable radio server never holds up (or breaks) the numbers above. */}
+      <Suspense
+        fallback={
+          <section id="radio" className="scroll-mt-20 border-t border-sand pt-8">
+            <h2 className="text-2xl sm:text-3xl">Radio listeners (all platforms)</h2>
+            <p className="mt-2 text-ink-soft">Loading the radio station&rsquo;s numbers&hellip;</p>
+          </section>
+        }
+      >
+        <RadioSection days={days} />
+      </Suspense>
     </div>
   );
 }

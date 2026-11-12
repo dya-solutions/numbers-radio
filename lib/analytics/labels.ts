@@ -51,6 +51,22 @@ export function deviceLabel(name: string): string {
   }
 }
 
+/** The kinds of listener device AzuraCast tells apart (by-client report). */
+export function clientLabel(kind: string): string {
+  switch (kind) {
+    case "mobile":
+      return "Phone or tablet";
+    case "desktop":
+      return "Computer (web browser)";
+    case "non_browser":
+      return "Apps, players and directories";
+    case "bot":
+      return "Bots and monitoring tools";
+    default:
+      return "Unknown";
+  }
+}
+
 export function plainName(name: string): string {
   return name || "Unknown";
 }

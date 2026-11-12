@@ -89,6 +89,19 @@ export default function PrivacyPage() {
       </section>
 
       <section className="space-y-3 rounded-xl border border-sand bg-surface p-5">
+        <h2 className="m-0 text-xl text-gold">The live radio stream</h2>
+        <p className="m-0 text-ink">
+          Everything above is about this website. The live audio itself comes
+          from our radio server, a separate system. To play you the audio it
+          has to receive your connection, and it keeps its own listener
+          statistics (for example the country, the kind of device or app, and
+          how long a listener stayed) so we know how many people we serve. That
+          happens for everyone who listens to the station, whether through this
+          website or another app.
+        </p>
+      </section>
+
+      <section className="space-y-3 rounded-xl border border-sand bg-surface p-5">
         <h2 className="m-0 text-xl text-gold">Messages you send us</h2>
         <p className="m-0 text-ink">
           Feedback and prayer requests you choose to send are stored separately

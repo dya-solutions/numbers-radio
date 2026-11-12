@@ -15,7 +15,7 @@ Counts.*
 | **Prayer Points** | `/prayer-points` | A list of prayer points, newest first, each with a "Read more" link to a news story. |
 | **Sermons** | `/sermons` | A list of sermons, newest first, each linking to its YouTube video. |
 | **Feedback** | `/feedback` | Two forms - feedback and prayer requests - that save to a Supabase database. |
-| **Statistics (password-protected)** | `/admin/statistics` | How people use the site and the player: visitors, page views, listening time, when people listen, where from, which devices, and how well the player is working. Anonymous - no cookies, no IP addresses stored. |
+| **Statistics (password-protected)** | `/admin/statistics` | How people use the site and the player: visitors, page views, listening time, when people listen, where from, which devices, and how well the player is working. Anonymous - no cookies, no IP addresses stored. A separate section, "Radio listeners (all platforms)", shows the radio station's own numbers from AzuraCast. |
 | **Privacy** | `/privacy` | A short plain-language note on what is counted (linked from the footer). |
 | **Staff area (password-protected)** | `/admin` | Feedback + prayer submissions, editors for the Daily Devotion, Program Guide, Prayer Points, and Sermons, and the Statistics page. |
 
@@ -59,6 +59,9 @@ The public page updates straight away, newest first.
 Sign in to `/admin` and open **Statistics**. Choose Today, 7, 30 or 90 days. Every
 chart has a one-line explanation under its title. All days and hours are Gulf
 Standard Time. One-time setup: [Statistics setup](#statistics-setup) below.
+The **Radio listeners (all platforms)** section at the bottom shows the station's
+own numbers (including people who listen outside this website); it needs a
+read-only AzuraCast key: [Radio listeners setup](#radio-listeners-setup).
 
 ### 7. The stream address, station links, and admin password
 These live in **environment variables** (see setup below). You never edit code
@@ -182,6 +185,62 @@ Statistics page shows when it last ran and has a **Clean up now** button.
 
 ---
 
+## Radio listeners setup
+
+The bottom of **Admin -> Statistics** can show the radio station's *own* listener
+numbers from AzuraCast: everyone connected to the stream, including people using
+other apps and directories. It needs a read-only AzuraCast API key. Until you add
+one, that section just says it isn't set up (the rest of the page is unaffected).
+
+**1. Let AzuraCast collect full listener statistics.** In AzuraCast: **Administration
+-> System Settings -> Security & Privacy -> Listener Analytics Collection** -> choose
+**Full** and save. (With *Limited*, the country, device and browser panels say
+"not available"; with *None*, nothing can be shown.)
+
+**2. Make a separate, limited AzuraCast user for the website.** Don't use your own
+administrator key: a key can do whatever its user can do.
+
+1. **Administration -> Permissions -> Add Role.** Name it e.g. `Website statistics (read only)`.
+   Leave every *global* permission unticked. Under *station* permissions add your
+   station and tick **only** "View Station Reports". Save.
+2. **Administration -> Users -> Add User.** Use a dedicated e-mail address and a long
+   random password, give it the role from the step above (and no other role), save.
+3. Sign in as that user (use a private/incognito window so you stay signed in as
+   yourself elsewhere). Click the name at the top right -> **My API Keys** ->
+   **Add API Key**, write "Numbers Radio website" as the description and save.
+4. **Copy the key now** - AzuraCast shows it only once. If you lose it, delete it
+   and make another.
+
+**3. Give the key to the website (server only, never `NEXT_PUBLIC_`).** Run these
+and paste the key when asked, then redeploy:
+
+```bash
+npx vercel env add AZURACAST_API_KEY production --sensitive
+npx vercel env add AZURACAST_API_KEY preview --sensitive
+```
+
+The station address and number come from the settings you already have
+(`NEXT_PUBLIC_AZURACAST_BASE_URL` = `https://radio.numbersradio.org` and
+`NEXT_PUBLIC_AZURACAST_STATION_ID`). For a local test put the key in
+`.env.local` as `AZURACAST_API_KEY`.
+
+**4. Check it.** Before redeploying you can test the key from a terminal (replace
+`YOUR_KEY`; it should print some JSON, not "403"):
+
+```bash
+curl -H "Authorization: Bearer YOUR_KEY" https://radio.numbersradio.org/api/station/1/reports/overview/by-listening-time
+```
+
+**What the page asks AzuraCast** (always from the server, never from a visitor's
+browser, answers kept for about a minute): the public "now playing" (listeners
+right now, no key needed) and, with the key, the station reports *charts*
+(unique listeners per day, average per hour), *by-client*, *by-country*,
+*by-browser*, *by-listening-time*, *best-and-worst* (most played tracks) and the
+*listeners* list (only to find the peak; the addresses in it are never read or
+kept). All of these only need the "View Station Reports" permission.
+
+---
+
 ## Finding your AzuraCast stream URL
 
 In your AzuraCast dashboard, open the station, then **Profile**. Under
@@ -238,6 +297,16 @@ Then open <http://localhost:3000>.
   `devotion.audio_hash` (SHA-256 of the spoken text) decides whether the audio is
   current. The public page plays it only when the hash matches, otherwise it uses
   the browser's speech synthesis.
+- **Radio listeners (AzuraCast):** [`lib/radio/azuracast.ts`](lib/radio/azuracast.ts)
+  (server only) calls AzuraCast's API with `AZURACAST_API_KEY` as a Bearer token,
+  never follows redirects, times out after 10 s (25 s for the peak), caps response
+  sizes, and keeps the small tidied results in a 1-minute in-memory cache (failures
+  10 s). [`lib/radio/parse.ts`](lib/radio/parse.ts) holds the pure parsers (shapes
+  copied from AzuraCast's source). The UI is
+  [`RadioSection.tsx`](app/admin/statistics/RadioSection.tsx), streamed inside
+  `<Suspense>` so the website numbers never wait for AzuraCast. Hourly detail is only
+  kept by AzuraCast for 14 days; "peak" is the most simultaneous connections, found
+  from the `listeners` report (bots left out).
 - **Statistics:** the browser sends tiny one-way notes to `POST /api/track`
   ([route](app/api/track/route.ts)); it never returns data. Pieces:
   [`lib/analytics/validate.ts`](lib/analytics/validate.ts) (strict input checks,

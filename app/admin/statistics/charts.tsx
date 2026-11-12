@@ -87,12 +87,12 @@ interface Point {
   tip: string;
 }
 
-function xLabels(points: Point[]): string[] {
+function xLabels(points: Point[], labelOf: (t: string) => string = formatBucket): string[] {
   if (points.length === 0) return [];
   const wanted = points.length <= 8 ? points.length : 5;
   const picks = new Set<number>();
   for (let i = 0; i < wanted; i++) picks.add(Math.round((i * (points.length - 1)) / Math.max(1, wanted - 1)));
-  return [...picks].sort((x, y) => x - y).map((i) => formatBucket(points[i].t));
+  return [...picks].sort((x, y) => x - y).map((i) => labelOf(points[i].t));
 }
 
 /**
@@ -105,15 +105,18 @@ function Columns({
   colorB,
   format,
   label,
+  labelOf,
 }: {
   points: Point[];
   colorA: string;
   colorB?: string;
   format: (n: number) => string;
   label: string;
+  /** How the little labels under the chart are written (default: "Nov 12" / "14:00"). */
+  labelOf?: (t: string) => string;
 }) {
-  const top = niceMax(Math.max(0, ...points.map((p) => p.a)));
-  const labels = xLabels(points);
+  const top = niceMax(Math.max(0, ...points.map((p) => Math.max(p.a, p.b ?? 0))));
+  const labels = xLabels(points, labelOf);
   const many = points.length > 45;
 
   return (
@@ -138,7 +141,7 @@ function Columns({
               >
                 <div
                   className="absolute bottom-0 w-full rounded-t-[2px]"
-                  style={{ height: `${(p.a / top) * 100}%`, minHeight: p.a > 0 ? 2 : 0, background: colorA }}
+                  style={{ height: `${Math.min(100, (p.a / top) * 100)}%`, minHeight: p.a > 0 ? 2 : 0, background: colorA }}
                 />
                 {colorB && p.b !== undefined ? (
                   <div
@@ -434,4 +437,97 @@ export function MiniStat({ label, value, tone }: { label: string; value: string;
       </p>
     </div>
   );
+}
+
+/* ------------------------ radio (AzuraCast) charts ------------------------ */
+
+/** Unique listeners per day (tall gold column) with the average number listening at once drawn inside it. */
+export function DailyListenersChart({
+  unique,
+  average,
+}: {
+  unique: { day: string; value: number }[];
+  average: { day: string; value: number }[] | null;
+}) {
+  const avgByDay = new Map((average ?? []).map((p) => [p.day, p.value]));
+  const points: Point[] = unique.map((p) => {
+    const avg = avgByDay.get(p.day);
+    return {
+      t: p.day,
+      a: p.value,
+      b: avg === undefined ? undefined : avg,
+      tip: `${formatBucket(p.day)}: ${formatNumber(p.value)} different listeners${
+        avg === undefined ? "" : `, about ${avg.toFixed(1)} listening at the same time on average`
+      }`,
+    };
+  });
+  const total = unique.reduce((s, p) => s + p.value, 0);
+  const best = unique.reduce((b, p) => (p.value > b.value ? p : b), unique[0]);
+
+  return (
+    <>
+      <Legend
+        items={[
+          { color: "var(--color-gold)", label: "Different listeners that day" },
+          ...(average ? [{ color: "#ffffff", label: "Average listening at the same time" }] : []),
+        ]}
+      />
+      <Columns
+        points={points}
+        colorA="var(--color-gold)"
+        colorB={average ? "#ffffff" : undefined}
+        format={(n) => formatNumber(n)}
+        label="Chart of unique radio listeners per day"
+      />
+      {total > 0 && best ? (
+        <p className="m-0 mt-3 text-sm text-ink-soft">
+          Best day: <strong className="text-ink">{formatBucket(best.day)}</strong> with {formatNumber(best.value)} different
+          listeners.
+        </p>
+      ) : (
+        <p className="m-0 mt-3 text-sm text-ink-soft">No listeners recorded by the station in this period yet.</p>
+      )}
+    </>
+  );
+}
+
+/** Average number of listeners at each hour of the day (24 columns, Gulf Standard Time). */
+export function HourOfDayChart({ values }: { values: number[] }) {
+  const hh = (h: number) => `${String(h).padStart(2, "0")}:00`;
+  const points: Point[] = values.map((v, h) => ({
+    t: hh(h),
+    a: v,
+    tip: `${hh(h)} GST: about ${v.toFixed(1)} listening on average`,
+  }));
+  const max = Math.max(0, ...values);
+  const busiest = values.indexOf(max);
+  const format = (n: number) => (n < 10 && !Number.isInteger(n) ? n.toFixed(1) : formatNumber(n));
+
+  return (
+    <>
+      <Legend items={[{ color: "var(--color-ember)", label: "Average number of listeners at that hour" }]} />
+      <Columns
+        points={points}
+        colorA="var(--color-ember)"
+        format={format}
+        label="Chart of average radio listeners by hour of the day"
+        labelOf={(t) => t}
+      />
+      <p className="m-0 mt-3 text-sm text-ink-soft">
+        {max > 0 ? (
+          <>
+            Busiest hour: <strong className="text-ink">{hh(busiest)}</strong> with about {max.toFixed(1)} listeners at a time.{" "}
+          </>
+        ) : (
+          <>No listeners in this period yet. </>
+        )}
+        Hours are Gulf Standard Time (GST), 00:00 = midnight.
+      </p>
+    </>
+  );
+}
+
+/** A small yellow-bordered message for a part of the radio section that could not be loaded. */
+export function Notice({ children }: { children: ReactNode }) {
+  return <p className="m-0 rounded-lg border border-ember bg-surface-2 p-3 text-sm text-ink-soft">{children}</p>;
 }
