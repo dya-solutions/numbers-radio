@@ -9,7 +9,7 @@ Counts.*
 | Page | Address | What it does |
 | --- | --- | --- |
 | **Listen** | `/` | Homepage with a live audio player for the radio stream. |
-| **Program Guide** | `/program-guide` | The on-air schedule. Hand-written for now; later it pulls from AzuraCast automatically. |
+| **Program Guide** | `/program-guide` | The weekly on-air schedule as a table (Monday to Sunday across the top, today highlighted in Gulf Standard Time; day buttons on phones). You edit it from `/admin`; later it may pull from AzuraCast automatically. |
 | **Daily Devotion** | `/daily-devotion` | An eight-section devotion (date, source line, title, scripture, body, further study, golden nugget, prayer) that you edit from `/admin`. |
 | **Listen to today's devotion** | `/daily-devotion` | A button on the devotion page. It plays an AI-voiced MP3 made automatically from the devotion text (or, when that isn't ready, your device's own voice) and pauses the live radio while it plays. |
 | **Prayer Points** | `/prayer-points` | A list of prayer points, newest first, each with a "Read more" link to a news story. |
@@ -31,10 +31,12 @@ no files.
 
 ### 2. The program guide
 Sign in to `/admin` and open **Edit Program Guide**. Add, change, or remove
-shows (Day, Time, Show name, Short description). Type times on the 24-hour clock
-(like `09:00` or `18:30`, in Gulf Standard Time - "GST" is added automatically when
-the time is shown); each day sorts itself by time. The public page updates
-straight away.
+shows (Days, Time, Show name, Short description). Tick the days a show airs on -
+or press **Every day**, **Weekdays** or **Weekends** - and one show can air on
+several days; at least one day is required. Type times on the 24-hour clock
+(like `09:00` or `18:30`, in Gulf Standard Time); each day lists its shows
+earliest first. The public page updates straight away. One-time setup for the
+days: [Program Guide days](#program-guide-days) below.
 
 ### 3. The devotion's spoken audio
 Nothing to upload. After you press **Save** in **Edit Daily Devotion**, the page
@@ -182,6 +184,43 @@ and robots / crawlers.
 A nightly database job (`pg_cron`, 03:10 GST) runs `analytics_maintenance()`,
 which first writes the daily totals and then deletes the old raw rows. The
 Statistics page shows when it last ran and has a **Clean up now** button.
+
+---
+
+## Program Guide days
+
+The Program Guide now picks days with checkboxes (Monday to Sunday) instead of a
+free-text Day box. Run this **once** in Supabase (SQL Editor -> New query -> paste
+-> Run; running it again is safe):
+
+[`supabase/add-program-days.sql`](supabase/add-program-days.sql)
+
+It adds a `days` column and works out the days from what was typed before
+("Monday", "Mon", "Daily", "Every day", "Every Night", "Weekdays", "Mon-Fri",
+"Weekend", "Sat & Sun", "Weekday Mornings (Monday - Friday)" ... in any
+capitalisation). **It never deletes anything and never guesses**: a day text it
+does not fully understand gets no days yet. Such a show shows a **Choose days**
+warning in the admin, and appears under **Other times** (with its original day
+text) below the public table until you tick its days. The old text is kept in
+`day` and `day_original`.
+
+**Check that no entries were lost.** The last thing the file prints is a table
+with every program: *status* (`ok` or `CHOOSE DAYS`), the *original day text*,
+the *days now*, plus two counters, `programs_now` and `programs_in_backup`
+(they must be the same number straight after running it). A safety copy of every
+program as it was before the first run is kept in the table
+`schedule_entries_backup_before_days`. To compare by hand:
+
+```sql
+-- Programs that were in the backup but are not in the live table (should be 0 right after the update):
+select count(*) from public.schedule_entries_backup_before_days b
+where not exists (select 1 from public.schedule_entries s where s.id = b.id);
+```
+
+(The backup is not touched later, so after you delete a show on purpose it will
+count as "missing".) Run the SQL before, or right after, the new site goes live:
+until then the public page lists every show under **Other times** and saving in
+the admin asks you to run the SQL first.
 
 ---
 
@@ -336,7 +375,12 @@ Then open <http://localhost:3000>.
   [`supabase/update-schedule-times-24h.sql`](supabase/update-schedule-times-24h.sql)
   rewrites saved Program Guide times (`6:00 PM` -> `18:00`). Times are stored as
   zero-padded 24-hour `HH:MM`; [`lib/time.ts`](lib/time.ts) normalises input,
-  still reads old 12-hour values, and sorts each day by time.
+  still reads old 12-hour values. [`lib/schedule.ts`](lib/schedule.ts) holds the
+  days helpers (day numbers 1 = Monday ... 7 = Sunday, labels, "today" in
+  Asia/Dubai, and `buildWeek` which builds the seven columns plus the "Other
+  times" leftovers). Days live in `schedule_entries.days smallint[]`
+  ([`supabase/add-program-days.sql`](supabase/add-program-days.sql) converts the old
+  `day` text; programs it can't map keep `days = '{}'` and their text).
 - **Program Guide TODO:** replace the `schedule_entries` read in
   [`lib/content.ts`](lib/content.ts) with a fetch to
   `${NEXT_PUBLIC_AZURACAST_BASE_URL}/api/station/${NEXT_PUBLIC_AZURACAST_STATION_ID}/schedule`.

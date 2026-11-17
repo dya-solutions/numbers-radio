@@ -42,31 +42,6 @@ export function timeToMinutes(label: string): number {
   return h * 60 + m;
 }
 
-/**
- * Orders schedule entries for display: days stay in the order they first
- * appear in the list (the order they were created), and within each day the
- * entries run earliest to latest. Entries with the same time keep their
- * original order.
- */
-export function sortScheduleEntries<T extends { day: string; timeLabel: string }>(
-  entries: T[],
-): T[] {
-  const dayOrder = new Map<string, number>();
-  for (const entry of entries) {
-    if (!dayOrder.has(entry.day)) dayOrder.set(entry.day, dayOrder.size);
-  }
-
-  return entries
-    .map((entry, index) => ({ entry, index }))
-    .sort(
-      (a, b) =>
-        dayOrder.get(a.entry.day)! - dayOrder.get(b.entry.day)! ||
-        timeToMinutes(a.entry.timeLabel) - timeToMinutes(b.entry.timeLabel) ||
-        a.index - b.index,
-    )
-    .map(({ entry }) => entry);
-}
-
 function pad(n: number) {
   return String(n).padStart(2, "0");
 }

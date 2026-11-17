@@ -15,13 +15,17 @@ export interface ScheduleEntry {
 }
 
 export interface ScheduleDay {
-  day: string;
+  /** A short description of when these programs air (only used internally). */
+  label: string;
+  /** Days of the week: 1 = Monday ... 7 = Sunday. */
+  days: number[];
   entries: ScheduleEntry[];
 }
 
 export const weeklySchedule: ScheduleDay[] = [
   {
-    day: "Weekday Mornings (Monday - Friday)",
+    label: "Weekday Mornings (Monday - Friday)",
+    days: [1, 2, 3, 4, 5],
     entries: [
       {
         time: "06:00",
@@ -43,7 +47,8 @@ export const weeklySchedule: ScheduleDay[] = [
     ],
   },
   {
-    day: "Weekday Afternoons (Monday - Friday)",
+    label: "Weekday Afternoons (Monday - Friday)",
+    days: [1, 2, 3, 4, 5],
     entries: [
       {
         time: "12:00",
@@ -64,7 +69,8 @@ export const weeklySchedule: ScheduleDay[] = [
     ],
   },
   {
-    day: "Evenings (Every Night)",
+    label: "Evenings (Every Night)",
+    days: [1, 2, 3, 4, 5, 6, 7],
     entries: [
       {
         time: "20:00",
@@ -79,7 +85,8 @@ export const weeklySchedule: ScheduleDay[] = [
     ],
   },
   {
-    day: "Sunday",
+    label: "Sunday",
+    days: [7],
     entries: [
       {
         time: "09:00",

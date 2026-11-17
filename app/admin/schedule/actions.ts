@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSupabaseAdmin } from "@/lib/supabaseServer";
 import { normalizeTime24 } from "@/lib/time";
+import { cleanDays, daysLabel } from "@/lib/schedule";
 
 export interface ActionResult {
   ok: boolean;
@@ -18,13 +19,24 @@ function refresh() {
   revalidatePath("/admin/schedule");
 }
 
+const SETUP_HELP =
+  "The Program Guide needs a one-time database update first: run supabase/add-program-days.sql in Supabase (see the README, \"Program Guide days\"), then try again.";
+
+/** True if Supabase complained that the new "days" column does not exist yet. */
+function isMissingDaysColumn(message: string) {
+  return /days/i.test(message) && /(column|schema cache)/i.test(message);
+}
+
 const TIME_HELP =
   "Please enter the time in 24-hour format, like 09:00 or 18:30.";
 
 function readEntry(formData: FormData) {
   const rawTime = text(formData, "time_label");
+  const days = cleanDays(formData.getAll("days"));
   return {
-    day: text(formData, "day"),
+    days,
+    // Kept in step with the days so the table in Supabase stays readable ("Mon, Wed, Fri").
+    day: daysLabel(days),
     // Stored as "HH:MM" (24-hour). Empty/invalid input is caught by validate().
     time_label: normalizeTime24(rawTime) ?? rawTime,
     show_name: text(formData, "show_name"),
@@ -34,8 +46,11 @@ function readEntry(formData: FormData) {
 
 /** Returns an error message if the entry is not ready to save, otherwise null. */
 function validate(entry: ReturnType<typeof readEntry>): string | null {
-  if (!entry.day || !entry.time_label || !entry.show_name) {
-    return "Please fill in the day, the time, and the show name.";
+  if (entry.days.length === 0) {
+    return "Please choose at least one day.";
+  }
+  if (!entry.time_label || !entry.show_name) {
+    return "Please fill in the time and the show name.";
   }
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(entry.time_label)) {
     return TIME_HELP;
@@ -54,6 +69,7 @@ export async function addScheduleEntry(formData: FormData): Promise<ActionResult
     if (error) throw new Error(error.message);
   } catch (err) {
     console.error("addScheduleEntry failed:", err);
+    if (err instanceof Error && isMissingDaysColumn(err.message)) return { ok: false, message: SETUP_HELP };
     return { ok: false, message: "Sorry, that show could not be added. Please try again." };
   }
 
@@ -77,6 +93,7 @@ export async function updateScheduleEntry(formData: FormData): Promise<ActionRes
     if (error) throw new Error(error.message);
   } catch (err) {
     console.error("updateScheduleEntry failed:", err);
+    if (err instanceof Error && isMissingDaysColumn(err.message)) return { ok: false, message: SETUP_HELP };
     return { ok: false, message: "Sorry, that change could not be saved. Please try again." };
   }
 

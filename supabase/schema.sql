@@ -123,28 +123,40 @@ create table if not exists public.schedule_entries (
   day          text not null default '',
   time_label   text not null default '',
   show_name    text not null default '',
-  description  text not null default ''
+  description  text not null default '',
+  -- Days of the week the show airs: 1 = Monday ... 7 = Sunday (several allowed).
+  days         smallint[] not null default '{}',
+  -- The text typed in the old free-text "Day" box, kept when converting (see add-program-days.sql).
+  day_original text,
+  constraint schedule_entries_days_valid check (days <@ array[1, 2, 3, 4, 5, 6, 7]::smallint[])
 );
+
+-- (An existing database that predates "days": run supabase/add-program-days.sql.
+--  It converts the old day text safely and loses nothing.)
 
 alter table public.schedule_entries enable row level security;
 
 create index if not exists schedule_entries_created_at_idx
   on public.schedule_entries (created_at asc);
 
+-- (Older databases created before the days checkboxes get the new columns here too.)
+alter table public.schedule_entries add column if not exists days smallint[] not null default '{}';
+alter table public.schedule_entries add column if not exists day_original text;
+
 -- Put the starting schedule in place (only if the table is completely empty).
-insert into public.schedule_entries (day, time_label, show_name, description)
+insert into public.schedule_entries (day, days, time_label, show_name, description)
 select * from (values
-  ('Weekday Mornings (Monday - Friday)', '06:00',  'First Light',       'Gentle worship and Scripture to begin the day. With Grace Okafor.'),
-  ('Weekday Mornings (Monday - Friday)', '08:00',  'The Morning Word',   'A short teaching and prayer over the day ahead. With Pastor Daniel Reyes.'),
-  ('Weekday Mornings (Monday - Friday)', '10:00', 'Hymns & History',    'Classic hymns and the stories behind them.'),
-  ('Weekday Afternoons (Monday - Friday)', '12:00', 'Midday Rest',      'Quiet instrumental worship for the lunch hour.'),
-  ('Weekday Afternoons (Monday - Friday)', '15:00',  'Every Soul Counts','Listener stories, encouragement, and prayer requests.'),
-  ('Weekday Afternoons (Monday - Friday)', '17:00',  'Drive Home Praise','Uplifting contemporary worship for the commute.'),
-  ('Evenings (Every Night)', '20:00',  'Evening Prayer',   'A guided time of prayer and reflection.'),
-  ('Evenings (Every Night)', '22:00', 'Through the Night','Soft worship music until morning.'),
-  ('Sunday', '09:00', 'Sunday Gathering',  'A full worship service with teaching.'),
-  ('Sunday', '18:00', 'Songs of the Church','Worship music from around the world.')
-) as seed(day, time_label, show_name, description)
+  ('Weekdays (Mon-Fri)', '{1,2,3,4,5}'::smallint[], '06:00',  'First Light',       'Gentle worship and Scripture to begin the day. With Grace Okafor.'),
+  ('Weekdays (Mon-Fri)', '{1,2,3,4,5}'::smallint[], '08:00',  'The Morning Word',   'A short teaching and prayer over the day ahead. With Pastor Daniel Reyes.'),
+  ('Weekdays (Mon-Fri)', '{1,2,3,4,5}'::smallint[], '10:00', 'Hymns & History',    'Classic hymns and the stories behind them.'),
+  ('Weekdays (Mon-Fri)', '{1,2,3,4,5}'::smallint[], '12:00', 'Midday Rest',      'Quiet instrumental worship for the lunch hour.'),
+  ('Weekdays (Mon-Fri)', '{1,2,3,4,5}'::smallint[], '15:00',  'Every Soul Counts','Listener stories, encouragement, and prayer requests.'),
+  ('Weekdays (Mon-Fri)', '{1,2,3,4,5}'::smallint[], '17:00',  'Drive Home Praise','Uplifting contemporary worship for the commute.'),
+  ('Every day', '{1,2,3,4,5,6,7}'::smallint[], '20:00',  'Evening Prayer',   'A guided time of prayer and reflection.'),
+  ('Every day', '{1,2,3,4,5,6,7}'::smallint[], '22:00', 'Through the Night','Soft worship music until morning.'),
+  ('Sun', '{7}'::smallint[], '09:00', 'Sunday Gathering',  'A full worship service with teaching.'),
+  ('Sun', '{7}'::smallint[], '18:00', 'Songs of the Church','Worship music from around the world.')
+) as seed(day, days, time_label, show_name, description)
 where not exists (select 1 from public.schedule_entries);
 
 -- Program Guide times are stored in 24-hour "HH:MM" form ("06:00", "15:30").

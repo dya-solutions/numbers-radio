@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "./supabaseServer";
-import { normalizeTime24, sortScheduleEntries } from "./time";
+import { normalizeTime24 } from "./time";
+import { cleanDays, sortByTime } from "./schedule";
 import { devotion as devotionFallback } from "@/content/devotion";
 import { weeklySchedule } from "@/content/schedule";
 
@@ -78,24 +79,31 @@ export async function getDevotion(): Promise<Devotion> {
 
 export interface ScheduleEntry {
   id: string;
-  day: string;
+  /** Days it airs: 1 = Monday ... 7 = Sunday. Empty = the days still need to be chosen. */
+  days: number[];
+  /** The text that was typed in the old free-text "Day" box (kept so nothing is lost). */
+  originalDay: string;
   timeLabel: string;
   showName: string;
   description: string;
 }
 
-export interface ScheduleDayGroup {
-  day: string;
+export interface ScheduleData {
   entries: ScheduleEntry[];
+  /** True when the database has not had supabase/add-program-days.sql run yet. */
+  setupNeeded: boolean;
 }
 
 /**
- * All shows, grouped by day (days in the order they were first added) and
- * sorted by time within each day, in 24-hour format. Used by both the public
- * page and the admin editor, so what you edit matches what is live.
+ * All programs, sorted by time (earliest first). Used by both the public page
+ * and the admin editor, so what you edit matches what is live.
  * Throws if the database is not configured.
+ *
+ * If the one-time SQL (supabase/add-program-days.sql) has not been run yet the
+ * "days" column does not exist: every program is then returned with no days (so
+ * it shows under "Other times" and nothing is hidden) and setupNeeded is true.
  */
-export async function listScheduleEntries(): Promise<ScheduleEntry[]> {
+export async function getScheduleData(): Promise<ScheduleData> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("schedule_entries")
@@ -104,11 +112,15 @@ export async function listScheduleEntries(): Promise<ScheduleEntry[]> {
 
   if (error) throw new Error(error.message);
 
-  const entries = (data ?? []).map((row) => {
+  const rows = data ?? [];
+  const setupNeeded = rows.length > 0 && !("days" in rows[0]);
+
+  const entries = rows.map((row) => {
     const timeLabel: string = row.time_label ?? "";
     return {
       id: String(row.id),
-      day: row.day ?? "",
+      days: cleanDays(row.days),
+      originalDay: String(row.day_original ?? row.day ?? ""),
       // Older entries saved as "6:00 AM" are shown as "06:00".
       timeLabel: normalizeTime24(timeLabel) ?? timeLabel,
       showName: row.show_name ?? "",
@@ -116,44 +128,32 @@ export async function listScheduleEntries(): Promise<ScheduleEntry[]> {
     };
   });
 
-  return sortScheduleEntries(entries);
+  return { entries: sortByTime(entries), setupNeeded };
 }
 
-const scheduleFileFallback: ScheduleDayGroup[] = weeklySchedule.map((d) => ({
-  day: d.day,
-  entries: sortScheduleEntries(
-    d.entries.map((e, i) => ({
-      id: `fallback-${i}`,
-      day: d.day,
+const scheduleFileFallback: ScheduleEntry[] = sortByTime(
+  weeklySchedule.flatMap((group, g) =>
+    group.entries.map((e, i) => ({
+      id: `fallback-${g}-${i}`,
+      days: cleanDays(group.days),
+      originalDay: group.label,
       timeLabel: normalizeTime24(e.time) ?? e.time,
       showName: e.title,
       description: e.host ? `${e.description} ${e.host}` : e.description,
     })),
   ),
-}));
+);
 
-/** Entries grouped by day, in the order days first appear. Used by the public page. */
-export async function getGroupedSchedule(): Promise<ScheduleDayGroup[]> {
-  let entries: ScheduleEntry[];
+/** What the public Program Guide shows. Falls back to the built-in starter schedule if the database is empty or unreachable. */
+export async function getPublicSchedule(): Promise<ScheduleData> {
   try {
-    entries = await listScheduleEntries();
+    const result = await getScheduleData();
+    if (result.entries.length === 0) return { entries: scheduleFileFallback, setupNeeded: false };
+    return result;
   } catch (err) {
-    console.error("getGroupedSchedule: using file fallback -", err);
-    return scheduleFileFallback;
+    console.error("getPublicSchedule: using file fallback -", err);
+    return { entries: scheduleFileFallback, setupNeeded: false };
   }
-
-  if (entries.length === 0) return scheduleFileFallback;
-
-  const groups: ScheduleDayGroup[] = [];
-  for (const entry of entries) {
-    let group = groups.find((g) => g.day === entry.day);
-    if (!group) {
-      group = { day: entry.day, entries: [] };
-      groups.push(group);
-    }
-    group.entries.push(entry);
-  }
-  return groups;
 }
 
 /* ===========================================================================

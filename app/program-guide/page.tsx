@@ -1,20 +1,26 @@
 import type { Metadata } from "next";
-import { getGroupedSchedule } from "@/lib/content";
+import { getPublicSchedule } from "@/lib/content";
+import { buildWeek, gstWeekday } from "@/lib/schedule";
 import {
   SCHEDULE_TIMEZONE_ABBR,
   SCHEDULE_TIMEZONE_NAME,
   SCHEDULE_TIMEZONE_OFFSET,
 } from "@/lib/config";
+import MobileDays from "./MobileDays";
+import Program from "./Program";
 
 export const metadata: Metadata = {
   title: "Program Guide",
 };
 
-// Always show the most recently saved schedule.
+// Always show the most recently saved schedule (and today's real weekday).
 export const dynamic = "force-dynamic";
 
 export default async function ProgramGuidePage() {
-  const schedule = await getGroupedSchedule();
+  const { entries } = await getPublicSchedule();
+  const { columns, other } = buildWeek(entries);
+  // Today in Gulf Standard Time, whatever time zone the visitor is in.
+  const today = gstWeekday();
 
   return (
     <div className="space-y-8">
@@ -29,41 +35,102 @@ export default async function ProgramGuidePage() {
         </p>
       </header>
 
-      <div className="space-y-6">
-        {schedule.map((day) => (
-          <section
-            key={day.day}
-            className="rounded-xl border border-sand bg-surface p-5"
-          >
-            <h2 className="m-0 text-xl text-gold">{day.day}</h2>
-            <ul className="mt-4 divide-y divide-sand">
-              {day.entries.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="flex flex-col gap-1 py-3 sm:flex-row sm:gap-4"
-                >
-                  <span className="w-28 shrink-0 font-semibold text-ink">
-                    {entry.timeLabel}{" "}
-                    <span className="text-xs font-medium text-gold">
-                      {SCHEDULE_TIMEZONE_ABBR}
-                    </span>
-                  </span>
-                  <span>
-                    <span className="font-semibold text-ink">
-                      {entry.showName}
-                    </span>
-                    {entry.description ? (
-                      <span className="block text-sm text-ink-soft">
-                        {entry.description}
-                      </span>
+      {/* Wide screens: all seven days side by side. (A little wider than the page text so the columns have room.) */}
+      <div className="hidden lg:relative lg:left-1/2 lg:block lg:w-[min(72rem,calc(100vw-2rem))] lg:-translate-x-1/2">
+        <table className="w-full table-fixed border-separate border-spacing-x-2 border-spacing-y-2">
+          <caption className="sr-only">
+            Weekly program schedule, Monday to Sunday. Times are in Gulf Standard Time.
+          </caption>
+          <thead>
+            <tr>
+              {columns.map(({ day }) => {
+                const isToday = day.n === today;
+                return (
+                  <th
+                    key={day.n}
+                    scope="col"
+                    aria-current={isToday ? "date" : undefined}
+                    className={`rounded-lg px-2 py-2.5 text-center text-sm font-semibold ${
+                      isToday ? "bg-gold text-black" : "border border-sand bg-surface text-ink"
+                    }`}
+                  >
+                    {day.long}
+                    {isToday ? (
+                      <span className="block text-[11px] font-semibold uppercase tracking-wide">Today</span>
                     ) : null}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {columns.map(({ day, entries: list }) => {
+                const isToday = day.n === today;
+                return (
+                  <td
+                    key={day.n}
+                    className={`rounded-lg border p-3 align-top ${
+                      isToday ? "border-gold bg-gold/10" : "border-sand bg-surface"
+                    }`}
+                  >
+                    {list.length === 0 ? (
+                      <p className="m-0 text-xs italic text-ink-soft">No programs scheduled</p>
+                    ) : (
+                      <ul className="m-0 list-none space-y-4 p-0">
+                        {list.map((entry) => (
+                          <li key={entry.id}>
+                            <Program
+                              timeLabel={entry.timeLabel}
+                              showName={entry.showName}
+                              description={entry.description}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
       </div>
+
+      {/* Phones and tablets: a button for each day, one day at a time. */}
+      <div className="lg:hidden">
+        <MobileDays
+          initialToday={today}
+          days={columns.map(({ entries: list }) =>
+            list.map((e) => ({
+              id: e.id,
+              timeLabel: e.timeLabel,
+              showName: e.showName,
+              description: e.description,
+            })),
+          )}
+        />
+      </div>
+
+      {/* Programs whose days have not been chosen yet in the admin: never hidden. */}
+      {other.length > 0 ? (
+        <section aria-labelledby="other-times" className="rounded-xl border border-sand bg-surface p-4">
+          <h2 id="other-times" className="m-0 text-base text-gold">
+            Other times
+          </h2>
+          <ul className="mb-0 mt-2 list-none space-y-2 p-0 text-sm">
+            {other.map((entry) => (
+              <li key={entry.id} className="text-ink-soft">
+                <span className="font-semibold text-ink">{entry.showName}</span>
+                {" - "}
+                {entry.originalDay ? `${entry.originalDay}, ` : ""}
+                {entry.timeLabel}
+                {entry.description ? <span className="block text-xs">{entry.description}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }
