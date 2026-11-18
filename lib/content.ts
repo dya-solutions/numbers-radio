@@ -41,33 +41,62 @@ const devotionFileFallback: Devotion = {
   audioHash: "",
 };
 
+/**
+ * The public pages (Program Guide, Daily Devotion, Prayer Points, Sermons) are
+ * served from a cached copy that is rebuilt in the background. If the database
+ * cannot be read during a rebuild, the rebuild must FAIL, so Next.js keeps
+ * showing the last good copy. Quietly building a "starter content" or "could
+ * not load" page instead would get cached and replace the good one. The
+ * friendly fallbacks below are only used while building and in local development.
+ */
+export function mayUseFallback(): boolean {
+  return process.env.NODE_ENV !== "production" || process.env.NEXT_PHASE === "phase-production-build";
+}
+
+/** Reads the devotion row. Throws if the database cannot be read. */
+async function readDevotion(): Promise<Devotion> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("devotion")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return devotionFileFallback;
+
+  return {
+    dateLabel: data.date_label ?? "",
+    sourceLine: data.source_line ?? "",
+    title: data.title ?? "",
+    scriptureReference: data.scripture_reference ?? "",
+    scriptureText: data.scripture_text ?? "",
+    body: data.body ?? "",
+    furtherStudy: data.further_study ?? "",
+    goldenNugget: data.golden_nugget ?? "",
+    prayer: data.prayer ?? "",
+    audioUrl: data.audio_url ?? "",
+    audioHash: data.audio_hash ?? "",
+  };
+}
+
+/** For the admin editor: falls back to the built-in devotion if the database can't be read (as before). */
 export async function getDevotion(): Promise<Devotion> {
   try {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-      .from("devotion")
-      .select("*")
-      .eq("id", 1)
-      .maybeSingle();
-
-    if (error) throw new Error(error.message);
-    if (!data) return devotionFileFallback;
-
-    return {
-      dateLabel: data.date_label ?? "",
-      sourceLine: data.source_line ?? "",
-      title: data.title ?? "",
-      scriptureReference: data.scripture_reference ?? "",
-      scriptureText: data.scripture_text ?? "",
-      body: data.body ?? "",
-      furtherStudy: data.further_study ?? "",
-      goldenNugget: data.golden_nugget ?? "",
-      prayer: data.prayer ?? "",
-      audioUrl: data.audio_url ?? "",
-      audioHash: data.audio_hash ?? "",
-    };
+    return await readDevotion();
   } catch (err) {
     console.error("getDevotion: using file fallback -", err);
+    return devotionFileFallback;
+  }
+}
+
+/** For the public Daily Devotion page (cached): see mayUseFallback(). */
+export async function getPublicDevotion(): Promise<Devotion> {
+  try {
+    return await readDevotion();
+  } catch (err) {
+    if (!mayUseFallback()) throw err;
+    console.error("getPublicDevotion: using file fallback -", err);
     return devotionFileFallback;
   }
 }
@@ -151,6 +180,7 @@ export async function getPublicSchedule(): Promise<ScheduleData> {
     if (result.entries.length === 0) return { entries: scheduleFileFallback, setupNeeded: false };
     return result;
   } catch (err) {
+    if (!mayUseFallback()) throw err;
     console.error("getPublicSchedule: using file fallback -", err);
     return { entries: scheduleFileFallback, setupNeeded: false };
   }

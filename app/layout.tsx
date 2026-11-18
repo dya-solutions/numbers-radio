@@ -5,6 +5,8 @@ import SiteHeader from "./components/SiteHeader";
 import PlayerProvider from "./components/PlayerProvider";
 import MiniPlayer from "./components/MiniPlayer";
 import Analytics from "./components/Analytics";
+import NavigationProgress from "./components/NavigationProgress";
+import SkeletonOverlay from "./components/SkeletonOverlay";
 import { STATION_NAME, STATION_TAGLINE, PRODUCT_FAMILY_URL } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -45,10 +47,14 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
         {/* The player lives here, above every page, so audio survives navigation. */}
         <PlayerProvider>
+          <NavigationProgress />
           <Analytics />
           <SiteHeader />
 
-          <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10">{children}</main>
+          <main className="relative mx-auto w-full max-w-4xl flex-1 px-4 py-10">
+            {children}
+            <SkeletonOverlay />
+          </main>
 
           <footer className="border-t border-sand bg-sand/40">
             <div className="mx-auto max-w-4xl px-4 py-6 text-sm text-ink-soft">
@@ -62,7 +68,9 @@ export default function RootLayout({
                 </a>
               </p>
               <p className="m-0 mt-1">
-                <Link href="/privacy">Privacy</Link>
+                <Link href="/privacy" prefetch={false}>
+                  Privacy
+                </Link>
               </p>
             </div>
           </footer>

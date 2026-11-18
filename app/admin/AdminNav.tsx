@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { usePendingHref } from "../components/NavigationProgress";
 
 const tabs = [
   { href: "/admin", label: "Submissions" },
@@ -14,16 +15,18 @@ const tabs = [
 
 export default function AdminNav() {
   const pathname = usePathname();
+  const pending = usePendingHref();
 
   return (
     <nav className="flex flex-wrap gap-2 border-b border-sand pb-4">
       {tabs.map((tab) => {
-        const active = pathname === tab.href;
+        // The tapped tab lights up at once while its page loads.
+        const active = pending ? pending.split("?")[0] === tab.href : pathname === tab.href;
         return (
           <Link
             key={tab.href}
             href={tab.href}
-            className={`rounded-lg px-3 py-1.5 text-sm no-underline transition-colors ${
+            className={`rounded-lg px-3 py-1.5 text-sm no-underline transition active:scale-95 ${
               active
                 ? "bg-gold font-medium text-black"
                 : "border border-sand bg-surface text-ink-soft hover:text-ink"

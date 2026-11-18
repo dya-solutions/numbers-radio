@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getDevotion } from "@/lib/content";
+import { getPublicDevotion } from "@/lib/content";
 import { hashSpokenText } from "@/lib/devotionAudio";
 import { buildSpokenText } from "@/lib/devotionSpeech";
 import ListenToDevotion from "./ListenToDevotion";
@@ -8,8 +8,10 @@ export const metadata: Metadata = {
   title: "Daily Devotion",
 };
 
-// Always show the most recently saved devotion.
-export const dynamic = "force-dynamic";
+// Served from cache. Rebuilt right away whenever this is saved in /admin
+// (revalidatePath in the matching app/admin/.../actions.ts), and as a safety
+// net at most every 5 minutes.
+export const revalidate = 300;
 
 function paragraphs(text: string): string[] {
   return text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
@@ -29,7 +31,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 }
 
 export default async function DailyDevotionPage() {
-  const devotion = await getDevotion();
+  const devotion = await getPublicDevotion();
   const bodyParas = paragraphs(devotion.body);
   const studyLines = lines(devotion.furtherStudy);
   const prayerParas = paragraphs(devotion.prayer);

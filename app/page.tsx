@@ -49,6 +49,7 @@ function HomeCard({
   return (
     <Link
       href={href}
+      prefetch={false}
       className="block rounded-xl border border-sand bg-surface p-5 no-underline transition-colors hover:border-ember"
     >
       <h3 className="m-0 text-lg text-ink">{title}</h3>

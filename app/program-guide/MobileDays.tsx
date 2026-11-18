@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { WEEK, gstWeekday } from "@/lib/schedule";
+import { WEEK } from "@/lib/schedule";
 import Program from "./Program";
+import { useGstToday } from "./useGstToday";
 
 interface Item {
   id: string;
@@ -25,21 +26,14 @@ export default function MobileDays({
   /** Today's weekday in GST (1 = Monday ... 7 = Sunday), worked out on the server. */
   initialToday: number;
 }) {
-  const [today, setToday] = useState(initialToday);
+  const today = useGstToday(initialToday);
   const [selected, setSelected] = useState(initialToday);
   const [picked, setPicked] = useState(false); // has the visitor chosen a day themselves?
 
-  // Keep "today" right if the page is left open past midnight in Dubai.
+  // Until the visitor picks a day, the selected day follows today (it can change at midnight in Dubai).
   useEffect(() => {
-    function sync() {
-      const now = gstWeekday();
-      setToday((previous) => (previous === now ? previous : now));
-      if (!picked) setSelected(now);
-    }
-    sync();
-    document.addEventListener("visibilitychange", sync);
-    return () => document.removeEventListener("visibilitychange", sync);
-  }, [picked]);
+    if (!picked) setSelected(today);
+  }, [today, picked]);
 
   const day = WEEK[selected - 1];
   const items = days[selected - 1] ?? [];

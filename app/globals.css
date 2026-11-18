@@ -30,6 +30,14 @@
     scroll-behavior: smooth;
   }
 
+  /* Taps respond at once: no 300 ms double-tap-to-zoom wait on links and buttons. */
+  a,
+  button,
+  summary,
+  label {
+    touch-action: manipulation;
+  }
+
   body {
     background-color: var(--color-cream);
     color: var(--color-ink);
@@ -63,4 +71,26 @@
   ::placeholder {
     color: #7a7a7a;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Program Guide: today's column in the weekly table. The server marks it and
+   TodayMarker keeps it right on screen (so a cached page never highlights the
+   wrong day). Written outside the layers on purpose so it wins over the
+   table's normal utility classes.
+--------------------------------------------------------------------------- */
+.week-table th .today-label {
+  display: none;
+}
+.week-table th[data-today="true"] {
+  background-color: var(--color-gold);
+  border-color: var(--color-gold);
+  color: #000;
+}
+.week-table th[data-today="true"] .today-label {
+  display: block;
+}
+.week-table td[data-today="true"] {
+  border-color: var(--color-gold);
+  background-color: color-mix(in srgb, var(--color-gold) 10%, transparent);
 }

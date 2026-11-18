@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
-import { listPrayerPoints, type PrayerPoint } from "@/lib/content";
+import { listPrayerPoints, mayUseFallback, type PrayerPoint } from "@/lib/content";
 import TrackedLink from "../components/TrackedLink";
 
 export const metadata: Metadata = {
   title: "Prayer Points",
 };
 
-// Always show the most recently added prayer points.
-export const dynamic = "force-dynamic";
+// Served from cache. Rebuilt right away whenever this is saved in /admin
+// (revalidatePath in the matching app/admin/.../actions.ts), and as a safety
+// net at most every 5 minutes.
+export const revalidate = 300;
 
 export default async function PrayerPointsPage() {
   let entries: PrayerPoint[] = [];
@@ -16,6 +18,9 @@ export default async function PrayerPointsPage() {
   try {
     entries = await listPrayerPoints();
   } catch (err) {
+    // On a cached page a failed rebuild must fail, so the last good copy stays up
+    // (see mayUseFallback in lib/content.ts). The message below is for the build / local use.
+    if (!mayUseFallback()) throw err;
     loadError = err instanceof Error ? err.message : "Unknown error";
   }
 

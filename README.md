@@ -187,6 +187,55 @@ Statistics page shows when it last ran and has a **Clean up now** button.
 
 ---
 
+## Speed: caching and instant feedback
+
+**What is cached.** The four pages that only show content from Supabase - Program
+Guide, Daily Devotion, Prayer Points and Sermons - are served as ready-made
+copies instead of being rebuilt from the database on every visit. Each copy is
+rebuilt **immediately when you save in /admin** (so a new devotion or schedule
+change shows up within seconds), and also automatically **at most every 5
+minutes** as a safety net. Home, Feedback and Privacy never change, so they are
+plain static pages. Nothing in `/admin` and nothing visitor-specific is ever
+cached (`/admin` is sent with `Cache-Control: no-store`; `/api` is never cached).
+If Supabase cannot be reached while a copy is being rebuilt, the rebuild fails
+on purpose and the **last good copy keeps being shown**.
+
+**What a tap does.** Tapping a menu link (desktop or the phone menu) lights up
+that item at once and starts a thin gold progress bar along the top of the screen
+until the new page appears. Repeat taps on a link that is already loading are
+ignored. If a page takes longer than about 0.15 seconds, a grey "skeleton" of the
+page fills the content area (menu, player and footer stay put). The other pages
+are fetched quietly in the background a moment after each page has finished
+loading, so most taps are instant. The live radio is never affected: the player
+lives above all pages and keeps playing.
+
+**Images and fonts.** The header logo is `public/logo-wordmark.jpg`, the wordmark
+cropped out of the big square `logo.jpeg` at exactly the banner shape shown (it is
+served through `next/image`, resized and as WebP). If you ever replace the logo,
+save a new banner-shaped (5:1) image under that name. The site uses the visitor's
+own system fonts, so there are no font files to download.
+
+**Seeing response times on Vercel.** In the Vercel dashboard open your project and
+click **Observability**: *CDN Requests* and *ISR* show how many page views were
+served from the cache, *Vercel Functions* shows how long the server-side work
+takes (Latency per path needs Observability Plus), *Image Optimization* covers the
+logo. **Logs** shows individual requests. To check one page yourself (replace the
+address with your site's):
+
+```bash
+curl.exe -s -o NUL -w "first byte %{time_starttransfer}s, total %{time_total}s\n" https://YOUR-SITE/program-guide
+curl.exe -sI https://YOUR-SITE/program-guide
+```
+
+The second command should list `x-vercel-cache: HIT` (served from cache) or
+`STALE` (served instantly while being refreshed), and a `cache-control` line with
+`s-maxage=300`. The Function Region is a Vercel project setting (Settings ->
+Functions); it is not set in this code, so Vercel's default (Washington, D.C.,
+`iad1`) applies unless you changed it. Ideally it is the same region as your
+Supabase project.
+
+---
+
 ## Program Guide days
 
 The Program Guide now picks days with checkboxes (Monday to Sunday) instead of a
@@ -317,7 +366,7 @@ Then open <http://localhost:3000>.
   [`app/admin/schedule`](app/admin/schedule), and
   [`app/admin/prayer-points`](app/admin/prayer-points), and
   [`app/admin/sermons`](app/admin/sermons) use server actions that
-  `revalidatePath` the public pages, which are `force-dynamic`.
+  `revalidatePath` the public pages, which are cached copies (`revalidate = 300`).
 - **Prayer point titles:** the editor auto-fills the title from the pasted
   link via [`app/admin/api/fetch-title`](app/admin/api/fetch-title/route.ts)
   (reads `<title>` / `og:title`, 6s timeout, blocks local addresses). It sits
@@ -336,6 +385,23 @@ Then open <http://localhost:3000>.
   `devotion.audio_hash` (SHA-256 of the spoken text) decides whether the audio is
   current. The public page plays it only when the hash matches, otherwise it uses
   the browser's speech synthesis.
+- **Caching and navigation feedback:** the four Supabase pages export
+  `revalidate = 300` and are refreshed instantly by the existing `revalidatePath`
+  calls in the admin actions. [`lib/content.ts`](lib/content.ts) `mayUseFallback()`
+  makes the public readers throw (instead of returning starter content) when the
+  database fails in production, so a failed rebuild keeps the last good copy; the
+  friendly fallbacks only apply while building and in development. Do not add
+  `loading.tsx` files to these pages: on cached pages Next puts the skeleton into
+  the HTML and swaps the real content in afterwards, which measured slower. The
+  skeletons ([`PageSkeletons.tsx`](app/components/PageSkeletons.tsx)) are shown by
+  [`SkeletonOverlay.tsx`](app/components/SkeletonOverlay.tsx) only when
+  [`NavigationProgress.tsx`](app/components/NavigationProgress.tsx) says a tapped
+  navigation has taken over 150 ms. That component (a capture-phase click listener on
+  internal `<a>` links, no changes needed per link) also draws the progress bar,
+  exposes the pending page to the menus (`usePendingHref`) and swallows repeat taps.
+  `SiteHeader` prefetches the other pages when the browser is idle after load.
+  The Program Guide's "today" column is fixed on screen by `TodayMarker` so a
+  cached copy never highlights the wrong day.
 - **Radio listeners (AzuraCast):** [`lib/radio/azuracast.ts`](lib/radio/azuracast.ts)
   (server only) calls AzuraCast's API with `AZURACAST_API_KEY` as a Bearer token,
   never follows redirects, times out after 10 s (25 s for the peak), caps response
